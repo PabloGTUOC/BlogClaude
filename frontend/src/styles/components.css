@@ -1,0 +1,448 @@
+/* ---------- buttons ---------- */
+.btn {
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: var(--space-3) var(--space-5);
+  background: transparent;
+  border: 1px solid var(--phosphor);
+  color: var(--phosphor);
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn:hover:not(:disabled) {
+  background: rgba(0, 255, 148, 0.08);
+  box-shadow: var(--glow-phosphor);
+}
+
+.btn:active:not(:disabled) {
+  background: var(--phosphor);
+  color: var(--void);
+}
+
+.btn--ghost {
+  border-color: var(--grid);
+  color: var(--chrome);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  border-color: var(--dust);
+  background: transparent;
+  box-shadow: none;
+}
+
+.btn--danger {
+  border-color: var(--neon-red);
+  color: var(--neon-red);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: rgba(255, 45, 85, 0.08);
+  box-shadow: var(--glow-red);
+}
+
+.btn--sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: 12px;
+}
+
+.btn:disabled {
+  border-color: var(--dust);
+  color: var(--dust);
+  cursor: not-allowed;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* ---------- role badges & tags ---------- */
+.rbadge {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px var(--space-2);
+  border-radius: 2px;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.rbadge--admin {
+  background: var(--phosphor);
+  color: var(--void);
+}
+
+.rbadge--family {
+  background: var(--amber);
+  color: var(--void);
+}
+
+.rbadge--viewer {
+  background: var(--dust);
+  color: var(--chrome);
+}
+
+.tag {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--phosphor);
+  background: var(--panel);
+  border: 1px solid var(--phosphor);
+  border-radius: 2px;
+  padding: 2px var(--space-3);
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* ---------- terminal input ---------- */
+.tinput {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  padding: var(--space-3);
+  transition: all var(--dur) var(--ease);
+}
+
+.tinput:focus-within {
+  border-color: var(--phosphor);
+  box-shadow: var(--glow-phosphor);
+}
+
+.tinput__prompt {
+  color: var(--phosphor);
+  font-family: var(--font-body);
+  user-select: none;
+}
+
+.tinput input, .tinput textarea, .tinput select {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--chrome);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.tinput textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.tinput input::placeholder {
+  color: var(--fog);
+}
+
+.tinput--error {
+  border-color: var(--neon-red);
+  box-shadow: var(--glow-red);
+}
+
+/* ---------- photo / frame card ---------- */
+.pcard {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--grid);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.pcard:hover {
+  border-top: 2px solid var(--phosphor);
+}
+
+.pcard__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pcard__badge {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 2px var(--space-2);
+  background: rgba(26, 26, 38, 0.85);
+  border: 1px solid var(--phosphor);
+  color: var(--phosphor);
+  border-radius: 2px;
+  z-index: 10;
+}
+
+.pcard__badge--digital {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.pcard__cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-3);
+  background: rgba(10, 10, 15, 0.88);
+  border-top: 1px solid var(--grid);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--amber);
+  transform: translateY(100%);
+  transition: transform var(--dur) var(--ease);
+}
+
+.pcard:hover .pcard__cap {
+  transform: translateY(0);
+}
+
+.pcard__cap span {
+  color: var(--fog);
+  display: block;
+  margin-top: 2px;
+}
+
+/* ---------- drop zone ---------- */
+.drop {
+  border: 1px dashed var(--phosphor);
+  background: var(--void);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-align: center;
+  transition: background var(--dur) var(--ease);
+  cursor: pointer;
+  padding: var(--space-4);
+}
+
+.drop:hover, .drop.dragover {
+  background: rgba(0, 255, 148, 0.06);
+  border-style: solid;
+}
+
+.drop__label {
+  font-family: var(--font-display);
+  font-size: 34px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+  text-shadow: var(--glow-phosphor);
+}
+
+.progress {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--phosphor);
+  letter-spacing: 0.05em;
+}
+
+.progress span {
+  color: var(--dust);
+}
+
+/* ---------- exif ---------- */
+.exif {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fog);
+  line-height: 1.7;
+}
+
+.exif b {
+  color: var(--chrome);
+  font-weight: 500;
+}
+
+/* ---------- lightbox ---------- */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-lightbox);
+  background: rgba(10, 10, 15, 0.97);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+.lightbox.open {
+  display: flex;
+}
+
+.lightbox__img {
+  max-width: 80vw;
+  max-height: 60vh;
+  border: 1px solid var(--grid);
+}
+
+.lightbox__panel {
+  width: min(80vw, 760px);
+}
+
+.lightbox__close {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-5);
+}
+
+.lightbox__nav {
+  display: flex;
+  justify-content: space-between;
+  width: min(80vw, 760px);
+  font-family: var(--font-label);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--chrome);
+}
+
+.lightbox__nav span {
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.lightbox__nav span:hover {
+  color: var(--phosphor);
+}
+
+.lb-tags {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* ---------- status bar ---------- */
+.statusbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--status-h);
+  z-index: var(--z-status);
+  background: var(--surface);
+  border-top: 1px solid var(--grid);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-5);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fog);
+  user-select: none;
+}
+
+.statusbar__zone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fog);
+}
+
+.dot--analog {
+  background: var(--phosphor);
+  box-shadow: var(--glow-phosphor);
+}
+
+.dot--digital {
+  background: var(--amber);
+  box-shadow: var(--glow-amber);
+}
+
+.dot--admin {
+  background: var(--neon-red);
+  box-shadow: var(--glow-red);
+}
+
+.statusbar__center {
+  color: var(--dust);
+}
+
+.statusbar__user b {
+  color: var(--chrome);
+  font-weight: 400;
+}
+
+@media (max-width: 600px) {
+  .statusbar__center {
+    display: none;
+  }
+}
+
+/* ---------- bracket decoration ---------- */
+.bracket {
+  position: relative;
+}
+
+.bracket::before, .bracket::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--phosphor);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.bracket::before {
+  top: 6px;
+  left: 6px;
+  border-width: 1px 0 0 1px;
+}
+
+.bracket::after {
+  bottom: 6px;
+  right: 6px;
+  border-width: 0 1px 1px 0;
+}
+
+.bracket .br-tr, .bracket .br-bl {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--phosphor);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.bracket .br-tr {
+  top: 6px;
+  right: 6px;
+  border-width: 1px 1px 0 0;
+}
+
+.bracket .br-bl {
+  bottom: 6px;
+  left: 6px;
+  border-width: 0 0 1px 1px;
+}
+
+.kicker {
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+}

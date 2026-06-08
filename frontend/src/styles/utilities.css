@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom background grid alignment */
+.grid-bg {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.grid-bg--on {
+  opacity: 0.4;
+}
+
+/* Aberration text effects */
+.aberration {
+  text-shadow: -1px 0 var(--neon-red), 1px 0 #00e0ff;
+}
+
+/* Custom transitions and other micro-helpers */
+.transition-all-custom {
+  transition: all var(--dur) var(--ease);
+}

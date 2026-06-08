@@ -1,0 +1,88 @@
+:root {
+  /* core palette */
+  --void: #0A0A0F;
+  --surface: #111118;
+  --panel: #1A1A26;
+  --grid: #1F1F2E;
+  --phosphor: #00FF94;
+  --amber: #FFB347;
+  --neon-red: #FF2D55;
+  --dust: #4A4A6A;
+  --fog: #8A8AAA;
+  --chrome: #C8C8E8;
+  --white: #F0F0FF;
+
+  /* semantic aliases */
+  --bg:            var(--void);
+  --bg-elevated:   var(--surface);
+  --bg-panel:      var(--panel);
+  --border:        var(--grid);
+  --border-strong: var(--dust);
+
+  /* text */
+  --text:          var(--chrome);
+  --text-heading:  var(--white);
+  --text-muted:    var(--fog);
+  --text-disabled: var(--dust);
+
+  /* intent */
+  --accent:        var(--phosphor);
+  --accent-warm:   var(--amber);
+  --danger:        var(--neon-red);
+  --focus-ring:    var(--phosphor);
+
+  /* glows */
+  --glow-phosphor: 0 0 6px rgba(0, 255, 148, 0.55), 0 0 14px rgba(0, 255, 148, 0.25);
+  --glow-amber:    0 0 6px rgba(255, 179, 71, 0.5);
+  --glow-red:      0 0 6px rgba(255, 45, 85, 0.55);
+
+  /* typography */
+  --font-display: 'VT323', monospace;
+  --font-label:   'Share Tech Mono', monospace;
+  --font-body:    'IBM Plex Mono', monospace;
+  --font-ui:      'Orbitron', sans-serif;
+
+  /* spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* radius */
+  --radius-none: 0px;
+  --radius-pill: 2px;
+
+  /* frame height dimensions */
+  --nav-h: 48px;
+  --status-h: 28px;
+
+  /* z-index scale */
+  --z-content: 1;
+  --z-scanlines: 50;
+  --z-status: 100;
+  --z-nav: 200;
+  --z-lightbox: 300;
+  --z-modal: 400;
+
+  /* transitions */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur: 200ms;
+  --dur-slow: 250ms;
+}
+
+/* Light mode inversion */
+html[data-theme="light"] {
+  --void: #E6E6F0;
+  --surface: #DADAE8;
+  --panel: #CECEDE;
+  --grid: #B8B8CC;
+  --chrome: #1A1A26;
+  --white: #0A0A0F;
+  --phosphor: #00B368; /* darkened for contrast */
+}

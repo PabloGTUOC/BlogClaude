@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS photos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  zone ENUM('analog', 'digital') NOT NULL,
+  analog_gallery_id INT NULL,
+  digital_gallery_id INT NULL,
+  filename VARCHAR(500) NOT NULL,
+  thumbnail VARCHAR(500) NOT NULL,
+  width INT NULL,
+  height INT NULL,
+  exif_json JSON NULL,
+  is_public BOOLEAN DEFAULT FALSE,
+  caption TEXT NULL,
+  sort_order INT DEFAULT 0,
+  uploaded_by INT NULL,
+  source ENUM('direct', 'google_photos') DEFAULT 'direct',
+  google_photos_id VARCHAR(255) NULL,
+  published_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (analog_gallery_id) REFERENCES analog_galleries(id) ON DELETE CASCADE,
+  FOREIGN KEY (digital_gallery_id) REFERENCES digital_galleries(id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
