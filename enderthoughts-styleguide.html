@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENDERTHOUGHTS // DESIGN SYSTEM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@400;500;600&family=Orbitron:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* core palette */
+  --void:#0A0A0F; --surface:#111118; --panel:#1A1A26; --grid:#1F1F2E;
+  --phosphor:#00FF94; --amber:#FFB347; --neon-red:#FF2D55;
+  --dust:#4A4A6A; --fog:#8A8AAA; --chrome:#C8C8E8; --white:#F0F0FF;
+  /* fonts */
+  --font-display:'VT323',monospace; --font-label:'Share Tech Mono',monospace;
+  --font-body:'IBM Plex Mono',monospace; --font-ui:'Orbitron',sans-serif;
+  /* spacing */
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;
+  --space-6:32px;--space-7:48px;--space-8:64px;--space-9:96px;
+  /* glows */
+  --glow-phosphor:0 0 6px rgba(0,255,148,.55),0 0 14px rgba(0,255,148,.25);
+  --glow-amber:0 0 6px rgba(255,179,71,.5);
+  --glow-red:0 0 6px rgba(255,45,85,.55);
+  /* motion */
+  --ease:cubic-bezier(0.16,1,0.3,1); --dur-fast:150ms; --dur:200ms; --dur-slow:250ms;
+  /* frame */
+  --nav-h:48px; --status-h:28px;
+  /* z */
+  --z-scanlines:50; --z-status:100; --z-nav:200; --z-lightbox:300;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{
+  background:var(--void); color:var(--chrome); font-family:var(--font-body);
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  padding-top:var(--nav-h); padding-bottom:var(--status-h);
+  overflow-x:hidden;
+}
+/* scanline overlay — single node */
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:var(--z-scanlines);
+  background:repeating-linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px,
+    rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 3px);
+}
+::selection{ background:var(--neon-red); color:var(--void); }
+a{ color:inherit; text-decoration:none; }
+
+/* ---------- crt boot (safe overlay flash; base state = finished/invisible) ---------- */
+.crt-flash{ position:fixed; inset:0; z-index:9999; pointer-events:none; opacity:0;
+  background:linear-gradient(var(--phosphor),var(--white)); mix-blend-mode:screen; }
+@keyframes crt-on{
+  0%{ opacity:0; transform:scaleY(.004); }
+  8%{ opacity:.5; transform:scaleY(.02); }
+  60%{ opacity:.12; transform:scaleY(1); }
+  100%{ opacity:0; transform:scaleY(1); }
+}
+@media (prefers-reduced-motion: no-preference){
+  .crt-flash{ animation:crt-on .35s var(--ease) 1 forwards; transform-origin:center; }
+}
+@keyframes blink{ 50%{ opacity:0; } }
+.cursor{ animation:blink 1s step-end infinite; color:var(--phosphor); }
+
+/* ---------- nav ---------- */
+.nav{
+  position:fixed; top:0; left:0; right:0; height:var(--nav-h); z-index:var(--z-nav);
+  background:var(--surface); border-bottom:1px solid var(--grid);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 var(--space-5);
+}
+.nav__logo{ font-family:var(--font-ui); font-weight:500; letter-spacing:.08em;
+  font-size:14px; color:var(--white); }
+.nav__logo span{ font-family:var(--font-label); color:var(--dust); font-weight:400; letter-spacing:.1em; }
+.nav__tabs{ display:flex; align-items:center; gap:var(--space-4); }
+.tab{ font-family:var(--font-ui); font-size:13px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--dust); padding:var(--space-2) var(--space-1); position:relative; cursor:pointer;
+  transition:color var(--dur) var(--ease); background:none; border:none; }
+.tab:hover{ color:var(--chrome); }
+.tab--active{ color:var(--phosphor); text-shadow:var(--glow-phosphor); }
+.tab--active::after{ content:""; position:absolute; left:0; right:0; bottom:-2px; height:2px;
+  background:var(--phosphor); box-shadow:var(--glow-phosphor); }
+.nav__auth{ font-family:var(--font-label); font-size:12px; letter-spacing:.1em; color:var(--fog);
+  border:1px solid var(--grid); padding:var(--space-1) var(--space-3); }
+@media (max-width:767px){ .nav__tabs .tab{ display:none; } .nav__tabs .tab--auth-mobile{ display:block; } }
+
+/* ---------- layout ---------- */
+.wrap{ max-width:1320px; margin:0 auto; padding:0 var(--space-6); }
+.section{ padding:var(--space-9) 0 var(--space-7); border-top:1px solid var(--grid); }
+.section:first-of-type{ border-top:none; }
+.section__head{ display:flex; align-items:baseline; gap:var(--space-4); margin-bottom:var(--space-6); flex-wrap:wrap; }
+.section__num{ font-family:var(--font-label); font-size:12px; letter-spacing:.12em; color:var(--phosphor); }
+.section__title{ font-family:var(--font-display); font-size:40px; line-height:1; letter-spacing:.05em;
+  text-transform:uppercase; color:var(--white); }
+.section__desc{ font-family:var(--font-body); font-size:14px; color:var(--fog); max-width:60ch; }
+.kicker{ font-family:var(--font-label); font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--phosphor); }
+
+/* ---------- hero ---------- */
+.hero{ position:relative; overflow:hidden; border-bottom:1px solid var(--grid);
+  padding:var(--space-9) 0 var(--space-8); }
+.grain{ position:absolute; inset:0; width:100%; height:100%; opacity:.035; pointer-events:none; mix-blend-mode:overlay; }
+.hero__inner{ position:relative; z-index:2; }
+.hero__kicker{ margin-bottom:var(--space-4); }
+.hero h1{ font-family:var(--font-display); font-size:clamp(56px,11vw,118px); line-height:.92;
+  letter-spacing:.04em; text-transform:uppercase; color:var(--white); text-shadow:var(--glow-phosphor); }
+.hero h1 .ab{ transition:text-shadow var(--dur) var(--ease); }
+.hero h1:hover .ab{ text-shadow:-2px 0 var(--neon-red), 2px 0 #00e0ff; }
+.hero__sub{ margin-top:var(--space-5); font-family:var(--font-body); color:var(--fog);
+  font-size:16px; max-width:64ch; }
+.hero__meta{ margin-top:var(--space-6); display:flex; gap:var(--space-5); flex-wrap:wrap;
+  font-family:var(--font-label); font-size:12px; letter-spacing:.1em; color:var(--dust); }
+.hero__meta b{ color:var(--phosphor); font-weight:400; }
+
+/* ---------- color tokens ---------- */
+.swatches{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1px;
+  background:var(--grid); border:1px solid var(--grid); }
+.swatch{ background:var(--surface); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); }
+.swatch__chip{ height:64px; border:1px solid var(--grid); }
+.swatch__name{ font-family:var(--font-ui); font-size:12px; letter-spacing:.08em; color:var(--white); }
+.swatch__hex{ font-family:var(--font-body); font-size:12px; color:var(--fog); }
+.swatch__var{ font-family:var(--font-body); font-size:11px; color:var(--dust); }
+
+/* ---------- type scale ---------- */
+.typerow{ display:grid; grid-template-columns:120px 1fr; gap:var(--space-5); align-items:baseline;
+  padding:var(--space-4) 0; border-bottom:1px solid var(--grid); }
+.typerow__meta{ font-family:var(--font-body); font-size:11px; color:var(--dust); line-height:1.5; }
+.typerow__meta b{ color:var(--phosphor); font-weight:400; display:block; }
+.t-display-xl{ font-family:var(--font-display); font-size:72px; line-height:.95; letter-spacing:.05em; text-transform:uppercase; color:var(--white); }
+.t-display-lg{ font-family:var(--font-display); font-size:56px; line-height:1; letter-spacing:.05em; text-transform:uppercase; color:var(--white); }
+.t-display-md{ font-family:var(--font-display); font-size:40px; line-height:1.05; letter-spacing:.05em; text-transform:uppercase; color:var(--white); }
+.t-label-lg{ font-family:var(--font-label); font-size:18px; letter-spacing:.1em; text-transform:uppercase; color:var(--chrome); }
+.t-label-md{ font-family:var(--font-label); font-size:14px; letter-spacing:.1em; text-transform:uppercase; color:var(--chrome); }
+.t-body-lg{ font-family:var(--font-body); font-size:17px; line-height:1.6; color:var(--chrome); }
+.t-body-md{ font-family:var(--font-body); font-size:15px; line-height:1.6; color:var(--chrome); }
+.t-body-sm{ font-family:var(--font-body); font-size:13px; line-height:1.5; color:var(--fog); }
+.t-ui-md{ font-family:var(--font-ui); font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--chrome); }
+
+/* ---------- photo grid ---------- */
+.grid-photos{ columns:4 220px; column-gap:var(--space-4); }
+@media (max-width:1023px){ .grid-photos{ columns:3 200px; } }
+@media (max-width:767px){ .grid-photos{ columns:2 150px; } }
+.pcard{ position:relative; break-inside:avoid; margin-bottom:var(--space-4);
+  border:1px solid var(--grid); border-top:1px solid var(--grid); background:var(--surface);
+  overflow:hidden; cursor:pointer; transition:border-color var(--dur) var(--ease); }
+.pcard:hover{ border-top:2px solid var(--phosphor); }
+.pcard__img{ display:block; width:100%; height:auto; }
+.pcard__badge{ position:absolute; top:var(--space-2); right:var(--space-2);
+  font-family:var(--font-label); font-size:11px; letter-spacing:.06em; padding:2px var(--space-2);
+  background:rgba(26,26,38,.85); border:1px solid var(--phosphor); color:var(--phosphor); border-radius:2px; }
+.pcard__badge--digital{ border-color:var(--amber); color:var(--amber); }
+.pcard__cap{ position:absolute; left:0; right:0; bottom:0; padding:var(--space-3);
+  background:rgba(10,10,15,.88); border-top:1px solid var(--grid);
+  font-family:var(--font-body); font-size:12px; color:var(--amber);
+  transform:translateY(100%); transition:transform var(--dur) var(--ease); }
+.pcard:hover .pcard__cap{ transform:translateY(0); }
+.pcard__cap span{ color:var(--fog); display:block; margin-top:2px; }
+
+/* ---------- component cards ---------- */
+.demo-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:var(--space-5); }
+.demo{ background:var(--surface); border:1px solid var(--grid); padding:var(--space-5); position:relative; }
+.demo__label{ font-family:var(--font-label); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--dust); margin-bottom:var(--space-4); }
+.demo__row{ display:flex; gap:var(--space-3); flex-wrap:wrap; align-items:center; }
+.demo__stack{ display:flex; flex-direction:column; gap:var(--space-3); }
+
+/* bracket decoration */
+.bracket{ position:relative; }
+.bracket::before,.bracket::after{ content:""; position:absolute; width:14px; height:14px;
+  border-color:var(--phosphor); border-style:solid; pointer-events:none; }
+.bracket::before{ top:6px; left:6px; border-width:1px 0 0 1px; }
+.bracket::after{ bottom:6px; right:6px; border-width:0 1px 1px 0; }
+.bracket .br-tr,.bracket .br-bl{ position:absolute; width:14px; height:14px; border-color:var(--phosphor); border-style:solid; pointer-events:none; }
+.bracket .br-tr{ top:6px; right:6px; border-width:1px 1px 0 0; }
+.bracket .br-bl{ bottom:6px; left:6px; border-width:0 0 1px 1px; }
+
+/* buttons */
+.btn{ font-family:var(--font-label); font-size:13px; letter-spacing:.1em; text-transform:uppercase;
+  padding:var(--space-3) var(--space-5); background:transparent; border:1px solid var(--phosphor);
+  color:var(--phosphor); cursor:pointer; transition:all var(--dur) var(--ease); border-radius:0; }
+.btn:hover{ background:rgba(0,255,148,.08); box-shadow:var(--glow-phosphor); }
+.btn:active{ background:var(--phosphor); color:var(--void); }
+.btn--ghost{ border-color:var(--grid); color:var(--chrome); }
+.btn--ghost:hover{ border-color:var(--dust); background:transparent; box-shadow:none; }
+.btn--danger{ border-color:var(--neon-red); color:var(--neon-red); }
+.btn--danger:hover{ background:rgba(255,45,85,.08); box-shadow:var(--glow-red); }
+.btn:disabled{ border-color:var(--dust); color:var(--dust); cursor:not-allowed; box-shadow:none; background:transparent; }
+
+/* role badges */
+.rbadge{ font-family:var(--font-ui); font-size:11px; font-weight:500; letter-spacing:.1em;
+  text-transform:uppercase; padding:3px var(--space-2); border-radius:2px; }
+.rbadge--admin{ background:var(--phosphor); color:var(--void); }
+.rbadge--family{ background:var(--amber); color:var(--void); }
+.rbadge--viewer{ background:var(--dust); color:var(--chrome); }
+
+/* tag pills */
+.tag{ font-family:var(--font-body); font-size:12px; color:var(--phosphor); background:var(--panel);
+  border:1px solid var(--phosphor); border-radius:2px; padding:2px var(--space-3); }
+
+/* terminal input */
+.tinput{ display:flex; align-items:center; gap:var(--space-2); background:var(--panel);
+  border:1px solid var(--grid); padding:var(--space-3); transition:all var(--dur) var(--ease); }
+.tinput:focus-within{ border-color:var(--phosphor); box-shadow:var(--glow-phosphor); }
+.tinput__prompt{ color:var(--phosphor); font-family:var(--font-body); }
+.tinput input{ flex:1; background:none; border:none; outline:none; color:var(--chrome);
+  font-family:var(--font-body); font-size:14px; }
+.tinput input::placeholder{ color:var(--fog); }
+.tinput--error{ border-color:var(--neon-red); box-shadow:var(--glow-red); }
+
+/* upload zone */
+.drop{ border:1px dashed var(--phosphor); background:var(--void); min-height:200px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-4);
+  text-align:center; transition:background var(--dur) var(--ease); }
+.drop:hover{ background:rgba(0,255,148,.04); }
+.drop__label{ font-family:var(--font-display); font-size:34px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--phosphor); text-shadow:var(--glow-phosphor); }
+.progress{ font-family:var(--font-body); font-size:15px; color:var(--phosphor); letter-spacing:.05em; }
+.progress span{ color:var(--dust); }
+
+/* exif readout */
+.exif{ font-family:var(--font-body); font-size:13px; color:var(--fog); line-height:1.7; }
+.exif b{ color:var(--chrome); font-weight:500; }
+
+/* month header */
+.month{ font-family:var(--font-display); font-size:40px; letter-spacing:.05em; text-transform:uppercase; color:var(--white); }
+.month .tri{ color:var(--amber); }
+.month .frames{ color:var(--amber); }
+.credit{ font-family:var(--font-label); font-size:11px; letter-spacing:.08em; color:var(--fog); }
+
+/* effects demo */
+.fx-grid-bg{ position:relative; min-height:160px; border:1px solid var(--grid);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px; display:flex; align-items:center; justify-content:center; }
+.fx-scan{ position:relative; min-height:160px; border:1px solid var(--grid); background:var(--surface); overflow:hidden;
+  display:flex; align-items:center; justify-content:center; }
+.fx-scan::after{ content:""; position:absolute; inset:0;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px); }
+.fx-glow{ min-height:160px; border:1px solid var(--grid); background:var(--surface);
+  display:flex; align-items:center; justify-content:center; }
+.fx-glow span{ font-family:var(--font-display); font-size:48px; color:var(--phosphor); text-shadow:var(--glow-phosphor); text-transform:uppercase; letter-spacing:.05em; }
+
+/* don't-do list */
+.dont{ display:grid; gap:var(--space-2); }
+.dont li{ list-style:none; font-family:var(--font-body); font-size:14px; color:var(--chrome);
+  padding:var(--space-3); border-left:2px solid var(--neon-red); background:var(--surface); }
+.dont li::before{ content:"✕ "; color:var(--neon-red); }
+
+/* lightbox */
+.lightbox{ position:fixed; inset:0; z-index:var(--z-lightbox); background:rgba(10,10,15,.97);
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-5); padding:var(--space-6); }
+.lightbox.open{ display:flex; }
+.lightbox__img{ max-width:80vw; max-height:62vh; border:1px solid var(--grid); }
+.lightbox__panel{ width:min(80vw,760px); }
+.lightbox__close{ position:absolute; top:var(--space-5); right:var(--space-5); }
+.lightbox__nav{ display:flex; justify-content:space-between; width:min(80vw,760px);
+  font-family:var(--font-label); font-size:14px; letter-spacing:.08em; color:var(--chrome); }
+.lightbox__nav span{ cursor:pointer; transition:color var(--dur) var(--ease); }
+.lightbox__nav span:hover{ color:var(--phosphor); }
+.lb-tags{ display:flex; gap:var(--space-2); margin-top:var(--space-3); flex-wrap:wrap; }
+
+/* status bar */
+.statusbar{ position:fixed; bottom:0; left:0; right:0; height:var(--status-h); z-index:var(--z-status);
+  background:var(--surface); border-top:1px solid var(--grid); display:flex; align-items:center;
+  justify-content:space-between; padding:0 var(--space-5);
+  font-family:var(--font-ui); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fog); }
+.statusbar__zone{ display:flex; align-items:center; gap:var(--space-2); }
+.dot{ width:8px; height:8px; border-radius:50%; background:var(--fog); }
+.dot--analog{ background:var(--phosphor); box-shadow:var(--glow-phosphor); }
+.statusbar__center{ color:var(--dust); }
+@media (max-width:600px){ .statusbar__center{ display:none; } }
+.statusbar__user b{ color:var(--chrome); font-weight:400; }
+</style>
+</head>
+<body>
+<div class="crt-flash"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav__logo">ENDERTHOUGHTS <span>// SYSTEM</span></div>
+  <div class="nav__tabs">
+    <button class="tab tab--active">Public</button>
+    <button class="tab">Analog</button>
+    <button class="tab">Digital</button>
+    <span class="nav__auth tab--auth-mobile">PABLO ●</span>
+  </div>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<header class="hero">
+  <svg class="grain"><filter id="grainf"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#grainf)"/></svg>
+  <div class="wrap hero__inner">
+    <div class="hero__kicker kicker">// DESIGN SYSTEM // TRANSMISSION SPEC v1.0</div>
+    <h1>ENDER<span class="ab">THOUGHTS</span></h1>
+    <p class="hero__sub">A transmission from a slightly alternate 1984 — where the network was wired a decade early and photography went digital while still feeling chemical. Retro-brutalist. CRT phosphor on wet-concrete black. <span class="cursor">_</span></p>
+    <div class="hero__meta">
+      <div>FONTS: <b>VT323 / SHARE TECH MONO / IBM PLEX MONO / ORBITRON</b></div>
+      <div>MODE: <b>DARK-FIRST</b></div>
+      <div>RADIUS: <b>0PX</b></div>
+    </div>
+  </div>
+</header>
+
+<!-- COLORS -->
+<section class="section" id="colors">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="section__num">01</div>
+      <h2 class="section__title">Color Tokens</h2>
+    </div>
+    <p class="section__desc" style="margin-bottom:var(--space-6)">Dark mode is canonical. Phosphor green is primary accent — used sparingly. Amber marks the digital zone; neon-red is danger &amp; admin.</p>
+    <div class="swatches" id="swatchGrid"></div>
+  </div>
+</section>
+
+<!-- TYPE -->
+<section class="section" id="type">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="section__num">02</div>
+      <h2 class="section__title">Typography</h2>
+    </div>
+    <div>
+      <div class="typerow"><div class="typerow__meta"><b>display-xl</b>VT323 · 72px<br>UPPER · 0.05em</div><div class="t-display-xl">Frames In Time</div></div>
+      <div class="typerow"><div class="typerow__meta"><b>display-md</b>VT323 · 40px<br>section titles</div><div class="t-display-md">// Analog Archive</div></div>
+      <div class="typerow"><div class="typerow__meta"><b>label-lg</b>Share Tech Mono<br>18px · 0.1em</div><div class="t-label-lg">Roll #042 // Portra 400</div></div>
+      <div class="typerow"><div class="typerow__meta"><b>label-md</b>Share Tech Mono<br>14px · labels</div><div class="t-label-md">Authenticate // Field Label</div></div>
+      <div class="typerow"><div class="typerow__meta"><b>body-lg</b>IBM Plex Mono<br>17px · article</div><div class="t-body-lg">The scanner hummed for ninety seconds before the first frame resolved on screen — grain first, then silver, then the whole afternoon came back.</div></div>
+      <div class="typerow"><div class="typerow__meta"><b>body-sm</b>IBM Plex Mono<br>13px · EXIF</div><div class="t-body-sm">FILE: DSC0123.jpg // ISO: 400 // f/2.8 // 1/500s</div></div>
+      <div class="typerow"><div class="typerow__meta"><b>ui-md</b>Orbitron · 14px<br>nav · 0.08em</div><div class="t-ui-md">Public · Analog · Digital</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PHOTO GRID -->
+<section class="section" id="grid">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="section__num">03</div>
+      <h2 class="section__title">Photo Grid</h2>
+      <p class="section__desc">Brutalist masonry — no radius, 1px grid border, phosphor top-border on hover, amber caption slides up. <em style="color:var(--phosphor)">Hover a card.</em></p>
+    </div>
+    <div class="grid-photos" id="photoGrid"></div>
+  </div>
+</section>
+
+<!-- COMPONENTS -->
+<section class="section" id="components">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="section__num">04</div>
+      <h2 class="section__title">Components</h2>
+    </div>
+    <div class="demo-grid">
+
+      <div class="demo bracket"><span class="br-tr"></span><span class="br-bl"></span>
+        <div class="demo__label">Buttons</div>
+        <div class="demo__row">
+          <button class="btn">Enter</button>
+          <button class="btn btn--ghost">Cancel</button>
+          <button class="btn btn--danger">Reject</button>
+          <button class="btn" disabled id="txBtn">Upload</button>
+        </div>
+      </div>
+
+      <div class="demo">
+        <div class="demo__label">Role Badges</div>
+        <div class="demo__row">
+          <span class="rbadge rbadge--admin">Admin</span>
+          <span class="rbadge rbadge--family">Family</span>
+          <span class="rbadge rbadge--viewer">Viewer</span>
+        </div>
+      </div>
+
+      <div class="demo">
+        <div class="demo__label">Terminal Input</div>
+        <div class="demo__stack">
+          <div class="tinput"><span class="tinput__prompt">&gt;</span><input placeholder="user@enderthoughts.sys"></div>
+          <div class="tinput tinput--error"><span class="tinput__prompt" style="color:var(--neon-red)">&gt;</span><input value="••••••" type="password"></div>
+        </div>
+      </div>
+
+      <div class="demo">
+        <div class="demo__label">Tag Pills</div>
+        <div class="demo__row">
+          <span class="tag">[ NIGHT ]</span>
+          <span class="tag">[ NEON ]</span>
+          <span class="tag">[ RAIN ]</span>
+          <span class="tag">[ LEICA M6 ]</span>
+        </div>
+      </div>
+
+      <div class="demo" style="grid-column:span 2;">
+        <div class="demo__label">Upload Zone — Analog</div>
+        <div class="drop">
+          <div class="drop__label">// DROP SCANS HERE //</div>
+          <div class="progress">[████████░░░░░░] <span>58%</span></div>
+        </div>
+      </div>
+
+      <div class="demo">
+        <div class="demo__label">EXIF Readout</div>
+        <p class="exif">FILE: <b>DSC0123.jpg</b> // ISO: <b>400</b> // <b>f/2.8</b> // <b>1/500s</b> // <b>LEICA M6</b> // <b>KODAK PORTRA 400</b></p>
+      </div>
+
+      <div class="demo">
+        <div class="demo__label">Monthly Header — Digital</div>
+        <div class="month"><span class="tri">▶</span> June 2026 <span style="color:var(--dust)">//</span> <span class="frames">47 Frames</span></div>
+        <div class="credit" style="margin-top:var(--space-3)">↑ BY GRANDMA ROSA</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- EFFECTS -->
+<section class="section" id="effects">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="section__num">05</div>
+      <h2 class="section__title">Texture &amp; Effects</h2>
+    </div>
+    <div class="demo-grid">
+      <div class="demo"><div class="demo__label">Scanline Overlay</div><div class="fx-scan"><span style="font-family:var(--font-label);color:var(--fog);letter-spacing:.1em">5% REPEATING 1PX</span></div></div>
+      <div class="demo"><div class="demo__label">Grid Background</div><div class="fx-grid-bg"><span style="font-family:var(--font-label);color:var(--fog);letter-spacing:.1em">32PX · TOGGLEABLE</span></div></div>
+      <div class="demo"><div class="demo__label">Phosphor Glow</div><div class="fx-glow"><span>ONLINE</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT NOT TO DO -->
+<section class="section" id="dont">
+  <div class="wrap">
+    <div class="section__head">
+      <div class="section__num">06</div>
+      <h2 class="section__title">What Not To Do</h2>
+    </div>
+    <ul class="dont">
+      <li>No rounded corners on cards, photos, panels, or inputs (max 2px, bracket pills only)</li>
+      <li>No white or near-white backgrounds</li>
+      <li>No sans-serif body text — body is always IBM Plex Mono</li>
+      <li>No gradients except the scanline overlay</li>
+      <li>No friendly/warm UI — no emoji, pastels, bouncy springs, floating cards</li>
+      <li>No soft drop-shadows — depth is borders + glow only</li>
+      <li>No glow on body text or EXIF</li>
+      <li>No spinners — loading is a blinking terminal cursor</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<!-- LIGHTBOX (demo) -->
+<div class="lightbox" id="lightbox">
+  <span class="btn btn--ghost lightbox__close" onclick="closeLB()">[ ESC ]</span>
+  <img class="lightbox__img" id="lbImg" alt="frame">
+  <div class="lightbox__panel">
+    <p class="exif" id="lbExif">FILE: <b>DSC0123.jpg</b> // ISO: <b>400</b> // <b>f/2.8</b> // <b>1/500s</b> // <b>LEICA M6</b> // <b>KODAK PORTRA 400</b></p>
+    <div class="lb-tags"><span class="tag">[ NIGHT ]</span><span class="tag">[ NEON ]</span><span class="tag">[ RAIN ]</span></div>
+  </div>
+  <div class="lightbox__nav"><span onclick="event.stopPropagation()">◀ PREV</span><span onclick="event.stopPropagation()">NEXT ▶</span></div>
+</div>
+
+<!-- STATUS BAR -->
+<footer class="statusbar">
+  <div class="statusbar__zone"><span class="dot dot--analog"></span> ZONE: ANALOG</div>
+  <div class="statusbar__center">ENDERTHOUGHTS v1.0</div>
+  <div class="statusbar__user">USER: <b>PABLO</b> // <span id="clock">14:32:07</span></div>
+</footer>
+
+<script>
+// ---- color tokens ----
+const TOKENS = [
+  ['VOID','#0A0A0F','--void','Main background'],
+  ['SURFACE','#111118','--surface','Cards / panels'],
+  ['PANEL','#1A1A26','--panel','Secondary panels'],
+  ['GRID','#1F1F2E','--grid','Lines / borders'],
+  ['PHOSPHOR','#00FF94','--phosphor','Primary accent'],
+  ['AMBER','#FFB347','--amber','Digital / warmth'],
+  ['NEON-RED','#FF2D55','--neon-red','Danger / admin'],
+  ['DUST','#4A4A6A','--dust','Muted fg'],
+  ['FOG','#8A8AAA','--fog','Tertiary text'],
+  ['CHROME','#C8C8E8','--chrome','Body text'],
+  ['WHITE','#F0F0FF','--white','Headings'],
+];
+document.getElementById('swatchGrid').innerHTML = TOKENS.map(t=>`
+  <div class="swatch">
+    <div class="swatch__chip" style="background:${t[1]}"></div>
+    <div class="swatch__name">${t[0]}</div>
+    <div class="swatch__hex">${t[1]}</div>
+    <div class="swatch__var">${t[2]} · ${t[3]}</div>
+  </div>`).join('');
+
+// ---- photo placeholders (striped SVG, monospace label) ----
+function placeholder(w,h,label,accent){
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'>
+    <defs><pattern id='p' width='8' height='8' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'>
+      <rect width='8' height='8' fill='%23111118'/><rect width='4' height='8' fill='%231A1A26'/></pattern></defs>
+    <rect width='100%' height='100%' fill='url(%23p)'/>
+    <rect x='0.5' y='0.5' width='${w-1}' height='${h-1}' fill='none' stroke='%231F1F2E'/>
+    <text x='50%' y='50%' fill='${accent}' font-family='monospace' font-size='12' letter-spacing='1' text-anchor='middle' dominant-baseline='middle'>${label}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg).replace(/%23/g,'%23');
+}
+const PHOTOS = [
+  [300,400,'35mm','NEON // RAIN','DSC0123.jpg · LEICA M6','analog'],
+  [300,220,'DIGITAL','ROOFTOP DUSK','IMG_4471.jpg · A7IV','digital'],
+  [300,360,'35mm','WET CONCRETE','DSC0124.jpg · PORTRA','analog'],
+  [300,300,'35mm','STATION 9','DSC0098.jpg · TRI-X','analog'],
+  [300,420,'DIGITAL','OFF-WORLD','IMG_4520.jpg · A7IV','digital'],
+  [300,260,'35mm','AMBER SIGN','DSC0131.jpg · CINESTILL','analog'],
+  [300,340,'DIGITAL','TRANSIT','IMG_4533.jpg · A7IV','digital'],
+  [300,300,'35mm','BACKLOT','DSC0140.jpg · HP5','analog'],
+];
+document.getElementById('photoGrid').innerHTML = PHOTOS.map(p=>{
+  const accent = p[5]==='analog' ? '%2300FF94' : '%23FFB347';
+  const badgeCls = p[5]==='digital' ? 'pcard__badge--digital' : '';
+  return `<figure class="pcard" onclick="openLB('${placeholder(p[0],p[1],p[3],accent)}','${p[4]}')">
+    <img class="pcard__img" src="${placeholder(p[0],p[1],p[2],accent)}" alt="${p[3]}">
+    <span class="pcard__badge ${badgeCls}">[${p[2]}]</span>
+    <figcaption class="pcard__cap">${p[3]}<span>${p[4]}</span></figcaption>
+  </figure>`;
+}).join('');
+
+// ---- lightbox ----
+function openLB(src,meta){
+  document.getElementById('lbImg').src = src.replace(/width='300'/, "width='900'").replace(/height='\d+'/, "height='620'");
+  document.getElementById('lbExif').innerHTML = 'FILE: <b>'+meta.split(' · ')[0]+'</b> // ISO: <b>400</b> // <b>f/2.8</b> // <b>1/500s</b> // <b>'+(meta.split(' · ')[1]||'LEICA M6')+'</b> // <b>KODAK PORTRA 400</b>';
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLB(){ document.getElementById('lightbox').classList.remove('open'); }
+document.getElementById('lightbox').addEventListener('click',e=>{ if(e.target.id==='lightbox') closeLB(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLB(); });
+
+// ---- transmitting button demo ----
+const txBtn = document.getElementById('txBtn');
+txBtn.disabled = false;
+let txing = false;
+txBtn.addEventListener('click',()=>{
+  if(txing) return; txing = true;
+  const orig = txBtn.textContent; txBtn.textContent = '[ TRANSMITTING... ]'; txBtn.disabled = true;
+  setTimeout(()=>{ txBtn.textContent = orig; txBtn.disabled = false; txing = false; }, 1800);
+});
+
+// ---- live clock ----
+function tick(){
+  const d = new Date();
+  const p = n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+tick(); setInterval(tick,1000);
+</script>
+</body>
+</html>
