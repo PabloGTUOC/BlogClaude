@@ -43,32 +43,32 @@ async function processUpload(fileBuffer, originalName) {
   const originalWidth = isRotated ? metadata.height : metadata.width;
   const originalHeight = isRotated ? metadata.width : metadata.height;
 
-  // Process Full Image: max 2400px on long edge, keep aspect ratio
+  // Process Full Image: max 5000px on long edge, keep aspect ratio
   let fullPipeline = sharp(fileBuffer).rotate(); // auto-rotate
-  if (originalWidth > 2400 || originalHeight > 2400) {
+  if (originalWidth > 5000 || originalHeight > 5000) {
     if (originalWidth >= originalHeight) {
-      fullPipeline = fullPipeline.resize({ width: 2400 });
+      fullPipeline = fullPipeline.resize({ width: 5000 });
     } else {
-      fullPipeline = fullPipeline.resize({ height: 2400 });
+      fullPipeline = fullPipeline.resize({ height: 5000 });
     }
   }
 
   const fullInfo = await fullPipeline
-    .jpeg({ quality: 85 })
+    .jpeg({ quality: 92, chromaSubsampling: '4:4:4' })
     .toFile(fullPath);
 
-  // Process Thumbnail: max 400px on long edge, keep aspect ratio
+  // Process Thumbnail: max 900px on long edge, keep aspect ratio
   let thumbPipeline = sharp(fileBuffer).rotate(); // auto-rotate
-  if (originalWidth > 400 || originalHeight > 400) {
+  if (originalWidth > 900 || originalHeight > 900) {
     if (originalWidth >= originalHeight) {
-      thumbPipeline = thumbPipeline.resize({ width: 400 });
+      thumbPipeline = thumbPipeline.resize({ width: 900 });
     } else {
-      thumbPipeline = thumbPipeline.resize({ height: 400 });
+      thumbPipeline = thumbPipeline.resize({ height: 900 });
     }
   }
 
   await thumbPipeline
-    .jpeg({ quality: 80 })
+    .jpeg({ quality: 88, chromaSubsampling: '4:4:4' })
     .toFile(thumbPath);
 
   return {

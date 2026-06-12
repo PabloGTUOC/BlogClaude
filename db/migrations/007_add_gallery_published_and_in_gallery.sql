@@ -1,0 +1,5 @@
+ALTER TABLE analog_galleries
+  ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE photos
+  ADD COLUMN in_gallery TINYINT(1) NOT NULL DEFAULT 0;

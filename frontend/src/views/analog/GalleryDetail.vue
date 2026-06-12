@@ -59,7 +59,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAnalogStore } from '@/stores/analog';
 import GalleryMeta from '@/components/GalleryMeta.vue';
@@ -85,13 +85,32 @@ export default {
     const gallery = computed(() => analogStore.currentGallery);
     const photos = computed(() => analogStore.currentPhotos);
 
+    const openPhotoById = (photoId) => {
+      const id = parseInt(photoId, 10);
+      const photo = photos.value.find(p => p.id === id);
+      if (photo) {
+        selectedPhoto.value = photo;
+        lightboxOpen.value = true;
+      }
+    };
+
     onMounted(async () => {
       try {
         await analogStore.fetchGalleryDetail(route.params.id);
+        if (route.params.photoId) {
+          openPhotoById(route.params.photoId);
+        }
       } catch (err) {
         error.value = err.response?.data?.error || err.message;
       } finally {
         loading.value = false;
+      }
+    });
+
+    // If user navigates between photo routes without remounting the component
+    watch(() => route.params.photoId, (newId) => {
+      if (newId && photos.value.length > 0) {
+        openPhotoById(newId);
       }
     });
 

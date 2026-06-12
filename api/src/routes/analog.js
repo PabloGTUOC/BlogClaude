@@ -32,6 +32,7 @@ function deletePhotoFiles(photo) {
 // GET /api/analog/galleries - List all analog galleries
 router.get('/galleries', verifyJWT, requireApproved, async (req, res) => {
   try {
+    const isAdmin = req.user.role === 'admin';
     const queryStr = `
       SELECT ag.*,
              (SELECT COUNT(*) FROM photos WHERE analog_gallery_id = ag.id) AS photo_count,
@@ -41,8 +42,17 @@ router.get('/galleries', verifyJWT, requireApproved, async (req, res) => {
                 JOIN analog_gallery_tags agt ON agt.tag_id = t.id
                 WHERE agt.gallery_id = ag.id),
                JSON_ARRAY()
-             ) AS tags
+             ) AS tags,
+             COALESCE(
+               (SELECT p.thumbnail FROM photos p
+                WHERE p.analog_gallery_id = ag.id AND p.in_gallery = 1
+                ORDER BY p.sort_order ASC, p.created_at ASC LIMIT 1),
+               (SELECT p.thumbnail FROM photos p
+                WHERE p.analog_gallery_id = ag.id
+                ORDER BY p.sort_order ASC, p.created_at ASC LIMIT 1)
+             ) AS cover_thumbnail
       FROM analog_galleries ag
+      ${isAdmin ? '' : 'WHERE ag.is_published = 1'}
       ORDER BY ag.year DESC, ag.month DESC, ag.created_at DESC
     `;
     const galleries = await db.query(queryStr);
@@ -58,6 +68,7 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
 
   try {
+    const isAdmin = req.user.role === 'admin';
     const galleryQuery = `
       SELECT ag.*,
              COALESCE(
@@ -69,6 +80,7 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
              ) AS tags
       FROM analog_galleries ag
       WHERE ag.id = ?
+      ${isAdmin ? '' : 'AND ag.is_published = 1'}
     `;
     const galleryRows = await db.query(galleryQuery, [galleryId]);
 
@@ -87,6 +99,7 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
              ) AS tags
       FROM photos p
       WHERE p.analog_gallery_id = ?
+      ${isAdmin ? '' : 'AND p.in_gallery = 1'}
       ORDER BY p.sort_order ASC, p.created_at DESC
     `;
     const photos = await db.query(photosQuery, [galleryId]);
@@ -198,6 +211,23 @@ router.delete('/galleries/:id', verifyJWT, requireAdmin, async (req, res) => {
   }
 });
 
+// PUT /api/analog/galleries/:id/publish - Toggle published state
+router.put('/galleries/:id/publish', verifyJWT, requireAdmin, async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  try {
+    const rows = await db.query('SELECT is_published FROM analog_galleries WHERE id = ?', [galleryId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+    }
+    const newState = rows[0].is_published ? 0 : 1;
+    await db.query('UPDATE analog_galleries SET is_published = ? WHERE id = ?', [newState, galleryId]);
+    res.json({ is_published: !!newState });
+  } catch (error) {
+    console.error('Error toggling gallery publish state:', error);
+    res.status(500).json({ error: 'Failed to toggle gallery publish state', code: 'DATABASE_ERROR' });
+  }
+});
+
 // POST /api/analog/galleries/:id/photos - Upload photos to gallery (admin only, multipart)
 router.post('/galleries/:id/photos', verifyJWT, requireAdmin, upload.array('photos', 12), async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
@@ -239,6 +269,35 @@ router.post('/galleries/:id/photos', verifyJWT, requireAdmin, upload.array('phot
   }
 });
 
+// PUT /api/analog/galleries/:id/photos/reorder - Reorder photos within gallery
+router.put('/galleries/:id/photos/reorder', verifyJWT, requireAdmin, async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+  const { updates } = req.body;
+
+  if (!updates || !Array.isArray(updates)) {
+    return res.status(400).json({ error: 'Missing reorder updates list', code: 'INVALID_INPUT' });
+  }
+
+  const connection = await db.pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    for (const item of updates) {
+      await connection.query(
+        'UPDATE photos SET sort_order = ? WHERE id = ? AND analog_gallery_id = ?',
+        [parseInt(item.sort_order, 10), parseInt(item.id, 10), galleryId]
+      );
+    }
+    await connection.commit();
+    res.json({ message: 'Photo order updated successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error reordering analog photos:', error);
+    res.status(500).json({ error: 'Failed to reorder photos', code: 'DATABASE_ERROR' });
+  } finally {
+    connection.release();
+  }
+});
+
 // DELETE /api/analog/photos/:id - Delete photo
 router.delete('/photos/:id', verifyJWT, requireAdmin, async (req, res) => {
   const photoId = parseInt(req.params.id, 10);
@@ -259,6 +318,23 @@ router.delete('/photos/:id', verifyJWT, requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error deleting photo:', error);
     res.status(500).json({ error: 'Failed to delete photo', code: 'DATABASE_ERROR' });
+  }
+});
+
+// PUT /api/analog/photos/:id/gallery - Toggle in_gallery state
+router.put('/photos/:id/gallery', verifyJWT, requireAdmin, async (req, res) => {
+  const photoId = parseInt(req.params.id, 10);
+  try {
+    const rows = await db.query('SELECT in_gallery FROM photos WHERE id = ? AND zone = "analog"', [photoId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Photo not found', code: 'NOT_FOUND' });
+    }
+    const newState = rows[0].in_gallery ? 0 : 1;
+    await db.query('UPDATE photos SET in_gallery = ? WHERE id = ?', [newState, photoId]);
+    res.json({ in_gallery: !!newState });
+  } catch (error) {
+    console.error('Error toggling photo gallery state:', error);
+    res.status(500).json({ error: 'Failed to toggle photo gallery state', code: 'DATABASE_ERROR' });
   }
 });
 

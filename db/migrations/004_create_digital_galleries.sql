@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS digital_galleries (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  year_month VARCHAR(7) NOT NULL UNIQUE,
+  `year_month` VARCHAR(7) NOT NULL UNIQUE,
   display_name VARCHAR(50) NOT NULL,
   cover_photo_id INT NULL,
   created_by INT NULL,

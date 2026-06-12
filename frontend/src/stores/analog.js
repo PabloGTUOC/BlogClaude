@@ -109,6 +109,52 @@ export const useAnalogStore = defineStore('analog', {
         console.error(`Failed to unpublish photo ${photoId}:`, error);
         throw error;
       }
+    },
+    async reorderPhotos(galleryId, updates) {
+      try {
+        await api.put(`/analog/galleries/${galleryId}/photos/reorder`, { updates });
+      } catch (error) {
+        console.error(`Failed to reorder photos in gallery ${galleryId}:`, error);
+        throw error;
+      }
+    },
+    async saveGalleryDetail(id, payload) {
+      try {
+        await api.put(`/analog/galleries/${id}`, payload);
+        await this.fetchGalleryDetail(id);
+      } catch (error) {
+        console.error(`Failed to save gallery detail ${id}:`, error);
+        throw error;
+      }
+    },
+    async toggleGalleryPublished(id) {
+      try {
+        const numId = parseInt(id, 10);
+        const response = await api.put(`/analog/galleries/${numId}/publish`);
+        if (this.currentGallery?.id === numId) {
+          this.currentGallery = { ...this.currentGallery, is_published: response.data.is_published };
+        }
+        const idx = this.galleries.findIndex(g => g.id === numId);
+        if (idx !== -1) {
+          this.galleries[idx] = { ...this.galleries[idx], is_published: response.data.is_published };
+        }
+        return response.data;
+      } catch (error) {
+        console.error(`Failed to toggle gallery published state ${id}:`, error);
+        throw error;
+      }
+    },
+    async togglePhotoGallery(photoId, galleryId) {
+      try {
+        const response = await api.put(`/analog/photos/${photoId}/gallery`);
+        if (galleryId) {
+          await this.fetchGalleryDetail(galleryId);
+        }
+        return response.data;
+      } catch (error) {
+        console.error(`Failed to toggle photo gallery state ${photoId}:`, error);
+        throw error;
+      }
     }
   }
 });

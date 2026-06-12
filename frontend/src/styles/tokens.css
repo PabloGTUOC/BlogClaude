@@ -85,4 +85,8 @@ html[data-theme="light"] {
   --chrome: #1A1A26;
   --white: #0A0A0F;
   --phosphor: #00B368; /* darkened for contrast */
+  /* glows at 30% opacity in light mode per design spec */
+  --glow-phosphor: 0 0 6px rgba(0, 179, 104, 0.3), 0 0 14px rgba(0, 179, 104, 0.12);
+  --glow-amber:    0 0 6px rgba(255, 179, 71, 0.15);
+  --glow-red:      0 0 6px rgba(255, 45, 85, 0.17);
 }

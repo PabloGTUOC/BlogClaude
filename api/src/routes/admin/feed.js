@@ -82,6 +82,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+// PUT /api/admin/feed/reorder/bulk - Bulk reorder (must be declared before /:id to avoid route collision)
+router.put('/reorder/bulk', async (req, res) => {
+  const { updates } = req.body; // Array of { id, sort_order }
+
+  if (!updates || !Array.isArray(updates)) {
+    return res.status(400).json({ error: 'Missing reorder updates list', code: 'INVALID_INPUT' });
+  }
+
+  const connection = await db.pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const item of updates) {
+      await connection.query('UPDATE photos SET sort_order = ? WHERE id = ?', [
+        parseInt(item.sort_order, 10),
+        parseInt(item.id, 10)
+      ]);
+    }
+
+    await connection.commit();
+    res.json({ message: 'Feed order updated successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error reordering feed:', error);
+    res.status(500).json({ error: 'Failed to reorder feed', code: 'DATABASE_ERROR' });
+  } finally {
+    connection.release();
+  }
+});
+
 // PUT /api/admin/photos/:id - Edit caption, tags, sort_order, is_public
 router.put('/:id', async (req, res) => {
   const photoId = parseInt(req.params.id, 10);
@@ -176,36 +206,6 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error hard deleting photo:', error);
     res.status(500).json({ error: 'Failed to delete photo', code: 'DATABASE_ERROR' });
-  }
-});
-
-// PUT /api/admin/photos/reorder - Bulk reorder
-router.put('/reorder/bulk', async (req, res) => {
-  const { updates } = req.body; // Array of { id, sort_order }
-
-  if (!updates || !Array.isArray(updates)) {
-    return res.status(400).json({ error: 'Missing reorder updates list', code: 'INVALID_INPUT' });
-  }
-
-  const connection = await db.pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    for (const item of updates) {
-      await connection.query('UPDATE photos SET sort_order = ? WHERE id = ?', [
-        parseInt(item.sort_order, 10),
-        parseInt(item.id, 10)
-      ]);
-    }
-
-    await connection.commit();
-    res.json({ message: 'Feed order updated successfully' });
-  } catch (error) {
-    await connection.rollback();
-    console.error('Error reordering feed:', error);
-    res.status(500).json({ error: 'Failed to reorder feed', code: 'DATABASE_ERROR' });
-  } finally {
-    connection.release();
   }
 });
 

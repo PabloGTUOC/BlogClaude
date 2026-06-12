@@ -97,3 +97,19 @@ body.scanlines::after {
   animation: blink 1s step-end infinite;
   color: var(--phosphor);
 }
+
+/* Content wrapper — max-width + horizontal padding */
+.wrap {
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-5);
+  padding-right: var(--space-5);
+}
+
+@media (min-width: 768px) {
+  .wrap {
+    padding-left: var(--space-7);
+    padding-right: var(--space-7);
+  }
+}

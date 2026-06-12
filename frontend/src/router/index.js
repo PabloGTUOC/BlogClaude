@@ -19,6 +19,7 @@ import DigitalMonthlyGallery from '@/views/digital/MonthlyGallery.vue';
 import AdminLayout from '@/views/admin/AdminLayout.vue';
 import AdminFeedManager from '@/views/admin/FeedManager.vue';
 import AdminAnalogManager from '@/views/admin/AnalogManager.vue';
+import AdminAnalogGallery from '@/views/admin/AnalogGallery.vue';
 import AdminDigitalManager from '@/views/admin/DigitalManager.vue';
 import AdminTagManager from '@/views/admin/TagManager.vue';
 import AdminUserManager from '@/views/admin/UserManager.vue';
@@ -42,6 +43,18 @@ const routes = [
     name: 'AnalogGalleryDetail',
     component: AnalogGalleryDetail,
     meta: { requiresApproved: true }
+  },
+  {
+    path: '/analog/:id/photo/:photoId',
+    name: 'AnalogPhotoDetail',
+    component: AnalogGalleryDetail,
+    meta: { requiresApproved: true }
+  },
+  {
+    path: '/analog/:id/upload',
+    name: 'AnalogPhotoUpload',
+    component: () => import('@/views/analog/PhotoUpload.vue'),
+    meta: { requiresAdmin: true }
   },
 
   // Digital routes (Guarded)
@@ -67,6 +80,7 @@ const routes = [
       { path: '', redirect: { name: 'AdminFeedManager' } },
       { path: 'feed', name: 'AdminFeedManager', component: AdminFeedManager },
       { path: 'analog', name: 'AdminAnalogManager', component: AdminAnalogManager },
+      { path: 'analog/:galleryId', name: 'AdminAnalogGallery', component: AdminAnalogGallery },
       { path: 'digital', name: 'AdminDigitalManager', component: AdminDigitalManager },
       { path: 'tags', name: 'AdminTagManager', component: AdminTagManager },
       { path: 'users', name: 'AdminUserManager', component: AdminUserManager },

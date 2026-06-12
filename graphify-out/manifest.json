@@ -1,0 +1,367 @@
+{
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/.claude/settings.local.json": {
+    "mtime": 1781205576.3515182,
+    "ast_hash": "1ba7784df224e89096b326073d034b62",
+    "semantic_hash": "1ba7784df224e89096b326073d034b62"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/package.json": {
+    "mtime": 1780942615.3861694,
+    "ast_hash": "e3a84470dea34a9aecf23fa60776f52e",
+    "semantic_hash": "e3a84470dea34a9aecf23fa60776f52e"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/db.js": {
+    "mtime": 1780943023.387329,
+    "ast_hash": "d7b8146180ff887490c543ecf56f1364",
+    "semantic_hash": "d7b8146180ff887490c543ecf56f1364"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/index.js": {
+    "mtime": 1780943031.7621565,
+    "ast_hash": "35a04b6d01730b4cb8829d1971c31e38",
+    "semantic_hash": "35a04b6d01730b4cb8829d1971c31e38"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/middleware/auth.js": {
+    "mtime": 1780942643.8749034,
+    "ast_hash": "65f5a07f4215228655a17690741cfa1e",
+    "semantic_hash": "65f5a07f4215228655a17690741cfa1e"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/middleware/upload.js": {
+    "mtime": 1780942647.1854894,
+    "ast_hash": "4a2e8a71e8f14a2294b3e3f82ce4b05a",
+    "semantic_hash": "4a2e8a71e8f14a2294b3e3f82ce4b05a"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/routes/admin/feed.js": {
+    "mtime": 1780948603.206391,
+    "ast_hash": "9b6b9292d6b17a87d1ef6cb44985c98b",
+    "semantic_hash": "9b6b9292d6b17a87d1ef6cb44985c98b"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/routes/admin/tags.js": {
+    "mtime": 1780942687.8237026,
+    "ast_hash": "9d150f9df11f5800e98cf8219e901868",
+    "semantic_hash": "9d150f9df11f5800e98cf8219e901868"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/routes/admin/users.js": {
+    "mtime": 1780942692.4576154,
+    "ast_hash": "7e556ba4fbff932e81392154ba035c10",
+    "semantic_hash": "7e556ba4fbff932e81392154ba035c10"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/routes/analog.js": {
+    "mtime": 1780942667.3514493,
+    "ast_hash": "ef4ac93f4b4580cd0c480b01e19f52cc",
+    "semantic_hash": "ef4ac93f4b4580cd0c480b01e19f52cc"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/routes/auth.js": {
+    "mtime": 1780942652.32522,
+    "ast_hash": "b05900180426024d9baa9893fd24bd93",
+    "semantic_hash": "b05900180426024d9baa9893fd24bd93"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/routes/digital.js": {
+    "mtime": 1780942675.1525226,
+    "ast_hash": "6bf4dec253e04e9682dbad1613550998",
+    "semantic_hash": "6bf4dec253e04e9682dbad1613550998"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/routes/photos.js": {
+    "mtime": 1780942658.9809642,
+    "ast_hash": "c1cb063898eb25c65487210755d1d085",
+    "semantic_hash": "c1cb063898eb25c65487210755d1d085"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/services/firebase.js": {
+    "mtime": 1780942624.0844932,
+    "ast_hash": "b9f456f7a76300b3ef10a4bde6d95073",
+    "semantic_hash": "b9f456f7a76300b3ef10a4bde6d95073"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/services/googlePhotos.js": {
+    "mtime": 1780942633.7283602,
+    "ast_hash": "9c48fdf15e7adc5c14d551a9f69e6fb2",
+    "semantic_hash": "9c48fdf15e7adc5c14d551a9f69e6fb2"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/services/mailer.js": {
+    "mtime": 1780942638.8659723,
+    "ast_hash": "edc23bdb950c5263130b70fe2698589e",
+    "semantic_hash": "edc23bdb950c5263130b70fe2698589e"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/services/migrations.js": {
+    "mtime": 1780943027.3150735,
+    "ast_hash": "5d401397f69927cba71bba735a6f721a",
+    "semantic_hash": "5d401397f69927cba71bba735a6f721a"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/api/src/services/sharp.js": {
+    "mtime": 1780942629.3348203,
+    "ast_hash": "c922bdb2a61944e1732a0b39c2328abb",
+    "semantic_hash": "c922bdb2a61944e1732a0b39c2328abb"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/db/migrations/001_create_users.sql": {
+    "mtime": 1780942544.627753,
+    "ast_hash": "5b4c1e6d05c67103a5afd436c8f231aa",
+    "semantic_hash": "5b4c1e6d05c67103a5afd436c8f231aa"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/db/migrations/002_create_tags.sql": {
+    "mtime": 1780942548.3748307,
+    "ast_hash": "42e233404c6b0172eef2cae31f2d3c8d",
+    "semantic_hash": "42e233404c6b0172eef2cae31f2d3c8d"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/db/migrations/003_create_analog_galleries.sql": {
+    "mtime": 1780942595.4587636,
+    "ast_hash": "bb945d60d2cb053640640dc66e7a378e",
+    "semantic_hash": "bb945d60d2cb053640640dc66e7a378e"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/db/migrations/004_create_digital_galleries.sql": {
+    "mtime": 1780942599.5017645,
+    "ast_hash": "9fc6c63dc946b2c397b66364f7a4a5ef",
+    "semantic_hash": "9fc6c63dc946b2c397b66364f7a4a5ef"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/db/migrations/005_create_photos.sql": {
+    "mtime": 1780942603.1294649,
+    "ast_hash": "ad45923711fb65d5c004257ab08389cd",
+    "semantic_hash": "ad45923711fb65d5c004257ab08389cd"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/db/migrations/006_create_junction_tables.sql": {
+    "mtime": 1780942608.044264,
+    "ast_hash": "9f3f7b94ba00e50d236ad30c916c56ff",
+    "semantic_hash": "9f3f7b94ba00e50d236ad30c916c56ff"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/deploy.sh": {
+    "mtime": 1780943045.3070352,
+    "ast_hash": "ee69e265e1ccfa3f5154e81f8d4a13f7",
+    "semantic_hash": "ee69e265e1ccfa3f5154e81f8d4a13f7"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/package.json": {
+    "mtime": 1780942706.1677773,
+    "ast_hash": "468a3308d90c197135832f27b7bf1d6e",
+    "semantic_hash": "468a3308d90c197135832f27b7bf1d6e"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/postcss.config.js": {
+    "mtime": 1780942713.7486413,
+    "ast_hash": "854b38759e7a8b4b82306ae2d9a3a833",
+    "semantic_hash": "854b38759e7a8b4b82306ae2d9a3a833"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/App.vue": {
+    "mtime": 1780948551.5803227,
+    "ast_hash": "06bbf42ab1da70f885528a95bae9f9fc",
+    "semantic_hash": "06bbf42ab1da70f885528a95bae9f9fc"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/GalleryCard.vue": {
+    "mtime": 1780942809.8888648,
+    "ast_hash": "11e4db5b4195e9ea1ee7a1ffd6f04cf4",
+    "semantic_hash": "11e4db5b4195e9ea1ee7a1ffd6f04cf4"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/GalleryMeta.vue": {
+    "mtime": 1780942788.0113273,
+    "ast_hash": "2a60994c176c9391f916bb27d7b4f25f",
+    "semantic_hash": "2a60994c176c9391f916bb27d7b4f25f"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/Lightbox.vue": {
+    "mtime": 1780942803.9653633,
+    "ast_hash": "f3c739de205502cbddd1c9e6023db2b1",
+    "semantic_hash": "f3c739de205502cbddd1c9e6023db2b1"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/PhotoCard.vue": {
+    "mtime": 1780942792.6396992,
+    "ast_hash": "df63570745e630ab137b3f17bf4a0bb3",
+    "semantic_hash": "df63570745e630ab137b3f17bf4a0bb3"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/PhotoGrid.vue": {
+    "mtime": 1780942796.7863584,
+    "ast_hash": "b8eed8c12cb4b0186ef9612d7ca75fc6",
+    "semantic_hash": "b8eed8c12cb4b0186ef9612d7ca75fc6"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/StatusBar.vue": {
+    "mtime": 1780942779.0827417,
+    "ast_hash": "cd30875435d1f92f1de27d803435828f",
+    "semantic_hash": "cd30875435d1f92f1de27d803435828f"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/TagBadge.vue": {
+    "mtime": 1780942783.0441558,
+    "ast_hash": "2a51f5486a73a58bd0d8762f4b7c628b",
+    "semantic_hash": "2a51f5486a73a58bd0d8762f4b7c628b"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/UploadZone.vue": {
+    "mtime": 1780942816.282469,
+    "ast_hash": "2a9b834044ff5be35fa7adef1d27ee75",
+    "semantic_hash": "2a9b834044ff5be35fa7adef1d27ee75"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/components/UserRow.vue": {
+    "mtime": 1780942821.6300004,
+    "ast_hash": "d6423a915e351c85f272f9d3d1fc5067",
+    "semantic_hash": "d6423a915e351c85f272f9d3d1fc5067"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/main.js": {
+    "mtime": 1780942831.9396367,
+    "ast_hash": "dc8565ec3c79876996c3891c99dc598f",
+    "semantic_hash": "dc8565ec3c79876996c3891c99dc598f"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/router/index.js": {
+    "mtime": 1780948637.292006,
+    "ast_hash": "17c97fd1194da4a963be8a3088112e23",
+    "semantic_hash": "17c97fd1194da4a963be8a3088112e23"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/services/api.js": {
+    "mtime": 1780942744.5673604,
+    "ast_hash": "e804dc2e059ac1d2e88c90f988d8e4cc",
+    "semantic_hash": "e804dc2e059ac1d2e88c90f988d8e4cc"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/services/firebase.js": {
+    "mtime": 1780942855.9247627,
+    "ast_hash": "2d1cb8049ad31cb92991b38ec915133e",
+    "semantic_hash": "2d1cb8049ad31cb92991b38ec915133e"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/stores/admin.js": {
+    "mtime": 1780942768.628554,
+    "ast_hash": "1760e4ceca809770549de76cf003f3dd",
+    "semantic_hash": "1760e4ceca809770549de76cf003f3dd"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/stores/analog.js": {
+    "mtime": 1780942758.5758808,
+    "ast_hash": "ced998ab1bac8a7e4855246efab8d746",
+    "semantic_hash": "ced998ab1bac8a7e4855246efab8d746"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/stores/auth.js": {
+    "mtime": 1780942749.7182171,
+    "ast_hash": "eca010af2e41bd203569626b7b9539a8",
+    "semantic_hash": "eca010af2e41bd203569626b7b9539a8"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/stores/digital.js": {
+    "mtime": 1780942763.334863,
+    "ast_hash": "b81622b38dc00069b2338c6f473c1cc3",
+    "semantic_hash": "b81622b38dc00069b2338c6f473c1cc3"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/stores/photos.js": {
+    "mtime": 1780942753.806471,
+    "ast_hash": "88a62f384dabcfff0d7bd5b1d971e7ad",
+    "semantic_hash": "88a62f384dabcfff0d7bd5b1d971e7ad"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/About.vue": {
+    "mtime": 1780942849.820968,
+    "ast_hash": "6b6d2e554d35d39ae52ec446f4dbd5a0",
+    "semantic_hash": "6b6d2e554d35d39ae52ec446f4dbd5a0"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/Home.vue": {
+    "mtime": 1780948538.789409,
+    "ast_hash": "d5c46d8e0e4488bf91ddf5434ba27c8d",
+    "semantic_hash": "d5c46d8e0e4488bf91ddf5434ba27c8d"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/Login.vue": {
+    "mtime": 1780948578.034107,
+    "ast_hash": "43f8af7246d070e490e9e36134910029",
+    "semantic_hash": "43f8af7246d070e490e9e36134910029"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/PhotoDetail.vue": {
+    "mtime": 1780942844.6101766,
+    "ast_hash": "e00e53504340bf49eb772f972ea238d3",
+    "semantic_hash": "e00e53504340bf49eb772f972ea238d3"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/Waiting.vue": {
+    "mtime": 1780942867.649327,
+    "ast_hash": "c8cb8aa1f9f70b768ecf6861540b03cb",
+    "semantic_hash": "c8cb8aa1f9f70b768ecf6861540b03cb"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/admin/AdminLayout.vue": {
+    "mtime": 1780942914.9713042,
+    "ast_hash": "1a89ad1578a910771630304afc8e8c21",
+    "semantic_hash": "1a89ad1578a910771630304afc8e8c21"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/admin/AnalogGallery.vue": {
+    "mtime": 1780948722.2210696,
+    "ast_hash": "d3c55e0fdc022defe0d4a1b6ac60cbad",
+    "semantic_hash": "d3c55e0fdc022defe0d4a1b6ac60cbad"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/admin/AnalogManager.vue": {
+    "mtime": 1780948676.156015,
+    "ast_hash": "ce0ef98d328c6af49fb30af3f4d58095",
+    "semantic_hash": "ce0ef98d328c6af49fb30af3f4d58095"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/admin/DigitalManager.vue": {
+    "mtime": 1780942936.8299248,
+    "ast_hash": "80fb826d8d14fa4880de182050732521",
+    "semantic_hash": "80fb826d8d14fa4880de182050732521"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/admin/FeedManager.vue": {
+    "mtime": 1780948794.811028,
+    "ast_hash": "8e07db9ec9c927a3b378a1c4997b68c0",
+    "semantic_hash": "8e07db9ec9c927a3b378a1c4997b68c0"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/admin/TagManager.vue": {
+    "mtime": 1780942993.394181,
+    "ast_hash": "afe6085cc39b6aa9ba5c8403f08ded84",
+    "semantic_hash": "afe6085cc39b6aa9ba5c8403f08ded84"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/admin/UserManager.vue": {
+    "mtime": 1780942999.2147424,
+    "ast_hash": "b43b62c68ba17e3184be34a6fcd236c8",
+    "semantic_hash": "b43b62c68ba17e3184be34a6fcd236c8"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/analog/GalleryDetail.vue": {
+    "mtime": 1780948661.0608602,
+    "ast_hash": "5ff2341f0b5d64f467742e4d0a48afb7",
+    "semantic_hash": "5ff2341f0b5d64f467742e4d0a48afb7"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/analog/GalleryList.vue": {
+    "mtime": 1780942878.1223285,
+    "ast_hash": "012d83430eb8781f5dfe81e3162ef7e0",
+    "semantic_hash": "012d83430eb8781f5dfe81e3162ef7e0"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/analog/PhotoUpload.vue": {
+    "mtime": 1780942888.936768,
+    "ast_hash": "ec680523ce454a5aa96920f33d952c62",
+    "semantic_hash": "ec680523ce454a5aa96920f33d952c62"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/digital/GooglePhotosImport.vue": {
+    "mtime": 1780942909.1443226,
+    "ast_hash": "20d35c6c6c217362cad4f31b41634998",
+    "semantic_hash": "20d35c6c6c217362cad4f31b41634998"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/digital/MonthlyGallery.vue": {
+    "mtime": 1780942904.7856266,
+    "ast_hash": "2bb1cb90845de54c3ab9c5ec8cbbabc4",
+    "semantic_hash": "2bb1cb90845de54c3ab9c5ec8cbbabc4"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/src/views/digital/MonthlyTimeline.vue": {
+    "mtime": 1780942894.6211364,
+    "ast_hash": "7e023b61fa3eda8c4df43c2f6be2827e",
+    "semantic_hash": "7e023b61fa3eda8c4df43c2f6be2827e"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/tailwind.config.js": {
+    "mtime": 1780942710.66417,
+    "ast_hash": "e4426b85f5ea4bfd5e06d59a1618efcb",
+    "semantic_hash": "e4426b85f5ea4bfd5e06d59a1618efcb"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/vite.config.js": {
+    "mtime": 1780942716.9486823,
+    "ast_hash": "969da113e0cafd3bce37b97bbe1a0029",
+    "semantic_hash": "969da113e0cafd3bce37b97bbe1a0029"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/DESIGN.MD": {
+    "mtime": 1780942358.8847632,
+    "ast_hash": "182aa6301df18d70bc2122c9b27965c9",
+    "semantic_hash": "182aa6301df18d70bc2122c9b27965c9"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/README.md": {
+    "mtime": 1780942358.884955,
+    "ast_hash": "b6f2da207fdc78d27883937ac6d49e19",
+    "semantic_hash": "b6f2da207fdc78d27883937ac6d49e19"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/SETUP.md": {
+    "mtime": 1780945360.7441525,
+    "ast_hash": "caa6e0512c3284dab119c71d9f8b5913",
+    "semantic_hash": "caa6e0512c3284dab119c71d9f8b5913"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/Session.MD": {
+    "mtime": 1780949061.484081,
+    "ast_hash": "0044e5e3a3d276b96ca830da560b0454",
+    "semantic_hash": "0044e5e3a3d276b96ca830da560b0454"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/docker-compose.yml": {
+    "mtime": 1780950113.1431909,
+    "ast_hash": "f602ce40d4ad887135e70db3804d2be0",
+    "semantic_hash": "f602ce40d4ad887135e70db3804d2be0"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/enderthoughts-styleguide.html": {
+    "mtime": 1780942358.8851569,
+    "ast_hash": "225fa2c1654b028ce45c1aded3e64638",
+    "semantic_hash": "225fa2c1654b028ce45c1aded3e64638"
+  },
+  "/Users/pablogtorres/Desktop/Projects/BlogClaude/frontend/index.html": {
+    "mtime": 1780942721.3332846,
+    "ast_hash": "657645924b74c99b8b736b5ea9dcea88",
+    "semantic_hash": "657645924b74c99b8b736b5ea9dcea88"
+  }
+}

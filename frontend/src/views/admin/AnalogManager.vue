@@ -32,11 +32,12 @@
         <thead class="bg-panel/60 border-b border-gridColor font-label text-dust select-none text-[10px] uppercase">
           <tr>
             <th class="p-3 w-16 text-center">ID</th>
+            <th class="p-3 w-20 text-center">Status</th>
             <th class="p-3">Roll Title</th>
             <th class="p-3">Camera &amp; Film Stock</th>
             <th class="p-3 w-28 text-center">Frames</th>
             <th class="p-3">Tags Assigned</th>
-            <th class="p-3 w-32 text-right">Actions</th>
+            <th class="p-3 w-56 text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gridColor/50">
@@ -45,17 +46,23 @@
             <td class="p-3 text-center font-label text-dust">
               #{{ String(g.id).padStart(3, '0') }}
             </td>
+            <!-- Status -->
+            <td class="p-3 text-center select-none">
+              <span :class="['font-label text-[9px] px-1.5 py-0.5 border', g.is_published ? 'bg-phosphor/10 text-phosphor border-phosphor/30' : 'bg-panel/60 text-dust/60 border-dust/20']">
+                {{ g.is_published ? 'LIVE' : 'DRAFT' }}
+              </span>
+            </td>
             <!-- Title -->
             <td class="p-3">
-              <router-link :to="`/analog/${g.id}`" class="text-white font-medium hover:text-phosphor uppercase">
+              <router-link :to="`/admin/analog/${g.id}`" class="text-white font-medium hover:text-phosphor uppercase">
                 {{ g.title }}
               </router-link>
               <div class="text-[10px] text-dust">{{ g.year }}.{{ String(g.month).padStart(2, '0') }}</div>
             </td>
             <!-- Camera & Film -->
             <td class="p-3 text-[10px] text-fog leading-relaxed uppercase">
-              <div>📷 {{ g.camera }}</div>
-              <div class="text-dust">🎞️ {{ g.film_stock }}</div>
+              <div><span class="font-label text-[9px] text-phosphor">CAM //</span> {{ g.camera }}</div>
+              <div class="text-dust mt-0.5"><span class="font-label text-[9px] text-dust">FILM //</span> {{ g.film_stock }}</div>
             </td>
             <!-- Count -->
             <td class="p-3 text-center font-label text-chrome">
@@ -69,7 +76,18 @@
             </td>
             <!-- Actions -->
             <td class="p-3 text-right select-none font-label space-x-3">
-              <button class="text-phosphor hover:underline text-[10px]" @click="openEditModal(g)">
+              <router-link :to="`/admin/analog/${g.id}`" class="text-phosphor hover:underline text-[10px]">
+                [ OPEN ]
+              </router-link>
+              <button
+                :class="['text-[10px] hover:underline', g.is_published ? 'text-dust' : 'text-chrome']"
+                :disabled="togglingPublishId === g.id"
+                @click="handleTogglePublish(g)"
+              >
+                <span v-if="togglingPublishId === g.id">...</span>
+                <span v-else>{{ g.is_published ? '[ UNPUBLISH ]' : '[ PUBLISH ]' }}</span>
+              </button>
+              <button class="text-dust hover:text-chrome hover:underline text-[10px]" @click="openEditModal(g)">
                 [ EDIT ]
               </button>
               <button class="text-neon-red hover:underline text-[10px]" @click="confirmDeleteRoll(g)">
@@ -247,6 +265,19 @@ export default {
       }
     };
 
+    const togglingPublishId = ref(null);
+
+    const handleTogglePublish = async (roll) => {
+      togglingPublishId.value = roll.id;
+      try {
+        await analogStore.toggleGalleryPublished(roll.id);
+      } catch (err) {
+        alert('Toggle publish failed: ' + err.message);
+      } finally {
+        togglingPublishId.value = null;
+      }
+    };
+
     const confirmDeleteRoll = async (roll) => {
       const promptText = `CRITICAL WARN: THIS WILL PERMANENTLY SCRAP '${roll.title}' AND ALL ATTACHED ${roll.photo_count} SCAN FRAMES. PROCEED?`;
       if (confirm(promptText)) {
@@ -261,10 +292,12 @@ export default {
       form,
       galleries,
       loading,
+      togglingPublishId,
       openCreateModal,
       openEditModal,
       submitForm,
-      confirmDeleteRoll
+      confirmDeleteRoll,
+      handleTogglePublish
     };
   }
 };

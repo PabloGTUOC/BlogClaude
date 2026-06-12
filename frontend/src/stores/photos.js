@@ -14,11 +14,15 @@ export const usePhotosStore = defineStore('photos', {
     loading: false
   }),
   actions: {
-    async fetchPhotos(page = 1, limit = 12) {
+    async fetchPhotos(page = 1, limit = 12, append = false) {
       this.loading = true;
       try {
         const response = await api.get('/photos', { params: { page, limit } });
-        this.photos = response.data.photos;
+        if (append) {
+          this.photos = [...this.photos, ...response.data.photos];
+        } else {
+          this.photos = response.data.photos;
+        }
         this.pagination = response.data.pagination;
       } catch (error) {
         console.error('Failed to fetch public photos:', error);

@@ -11,21 +11,21 @@
       <div class="nav__tabs">
         <!-- Exact match for public home feed -->
         <router-link to="/" class="tab" :class="{ 'tab--active': $route.path === '/' }">
-          Public
+          [ PUBLIC ]
         </router-link>
-        
+
         <template v-if="isApproved || isAdmin">
           <router-link to="/analog" class="tab" active-class="tab--active">
-            Analog
+            [ ANALOG ]
           </router-link>
           <router-link to="/digital" class="tab" active-class="tab--active">
-            Digital
+            [ DIGITAL ]
           </router-link>
         </template>
 
         <template v-if="isAdmin">
           <router-link to="/admin" class="tab" active-class="tab--active">
-            Admin
+            [ ADMIN ]
           </router-link>
         </template>
 
