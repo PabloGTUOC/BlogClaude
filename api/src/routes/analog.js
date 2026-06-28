@@ -29,10 +29,38 @@ function deletePhotoFiles(photo) {
 // PUBLIC/APPROVED USER ROUTES (RequireApproved)
 // -------------------------------------------------------------
 
-// GET /api/analog/galleries - List all analog galleries
+// GET /api/analog/galleries - List analog galleries filtered by role
 router.get('/galleries', verifyJWT, requireApproved, async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'admin';
+    const { role, group: userGroup } = req.user;
+    const isAdmin = role === 'admin';
+    const isFriend = role === 'friend';
+
+    let whereClause;
+    let params = [];
+
+    if (isAdmin) {
+      // Admins see everything including unpublished
+      whereClause = '';
+    } else if (isFriend) {
+      // Friends see published galleries tagged 'friends' OR their specific group
+      const allowedTags = ['friends'];
+      if (userGroup) allowedTags.push(userGroup);
+      const placeholders = allowedTags.map(() => '?').join(', ');
+      whereClause = `
+        WHERE ag.is_published = 1
+          AND EXISTS (
+            SELECT 1 FROM analog_gallery_tags agt
+            JOIN tags t ON t.id = agt.tag_id
+            WHERE agt.gallery_id = ag.id AND t.name IN (${placeholders})
+          )
+      `;
+      params = allowedTags;
+    } else {
+      // Family and legacy 'user' role: all published galleries
+      whereClause = 'WHERE ag.is_published = 1';
+    }
+
     const queryStr = `
       SELECT ag.*,
              (SELECT COUNT(*) FROM photos WHERE analog_gallery_id = ag.id) AS photo_count,
@@ -52,10 +80,10 @@ router.get('/galleries', verifyJWT, requireApproved, async (req, res) => {
                 ORDER BY p.sort_order ASC, p.created_at ASC LIMIT 1)
              ) AS cover_thumbnail
       FROM analog_galleries ag
-      ${isAdmin ? '' : 'WHERE ag.is_published = 1'}
+      ${whereClause}
       ORDER BY ag.year DESC, ag.month DESC, ag.created_at DESC
     `;
-    const galleries = await db.query(queryStr);
+    const galleries = await db.query(queryStr, params);
     res.json(galleries);
   } catch (error) {
     console.error('Error fetching analog galleries:', error);
@@ -68,7 +96,30 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
 
   try {
-    const isAdmin = req.user.role === 'admin';
+    const { role, group: userGroup } = req.user;
+    const isAdmin = role === 'admin';
+    const isFriend = role === 'friend';
+
+    let accessClause = '';
+    let accessParams = [galleryId];
+
+    if (isFriend) {
+      const allowedTags = ['friends'];
+      if (userGroup) allowedTags.push(userGroup);
+      const placeholders = allowedTags.map(() => '?').join(', ');
+      accessClause = `
+        AND ag.is_published = 1
+        AND EXISTS (
+          SELECT 1 FROM analog_gallery_tags agt
+          JOIN tags t ON t.id = agt.tag_id
+          WHERE agt.gallery_id = ag.id AND t.name IN (${placeholders})
+        )
+      `;
+      accessParams = [galleryId, ...allowedTags];
+    } else if (!isAdmin) {
+      accessClause = 'AND ag.is_published = 1';
+    }
+
     const galleryQuery = `
       SELECT ag.*,
              COALESCE(
@@ -80,9 +131,9 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
              ) AS tags
       FROM analog_galleries ag
       WHERE ag.id = ?
-      ${isAdmin ? '' : 'AND ag.is_published = 1'}
+      ${accessClause}
     `;
-    const galleryRows = await db.query(galleryQuery, [galleryId]);
+    const galleryRows = await db.query(galleryQuery, accessParams);
 
     if (galleryRows.length === 0) {
       return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });

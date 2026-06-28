@@ -24,9 +24,24 @@ function requireApproved(req, res, next) {
     return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
   }
 
-  // Admins bypass normal user status requirements if set manually
-  if (req.user.status !== 'approved' && req.user.role !== 'admin') {
+  const { role, status } = req.user;
+  const hasAccess = role === 'admin' || (status === 'approved' && ['family', 'friend', 'user'].includes(role));
+  if (!hasAccess) {
     return res.status(403).json({ error: 'Account pending approval or access revoked', code: 'ACCESS_RESTRICTED' });
+  }
+
+  next();
+}
+
+// Requires family or admin — blocks friends
+function requireFamily(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+  }
+
+  const { role, status } = req.user;
+  if (role !== 'admin' && !(status === 'approved' && role === 'family')) {
+    return res.status(403).json({ error: 'Family access required', code: 'ACCESS_RESTRICTED' });
   }
 
   next();
@@ -47,6 +62,7 @@ function requireAdmin(req, res, next) {
 module.exports = {
   verifyJWT,
   requireApproved,
+  requireFamily,
   requireAdmin,
   JWT_SECRET
 };

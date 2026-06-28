@@ -123,7 +123,7 @@
         // NO FRAMES ON THIS ROLL YET — TRANSMIT SCANS ABOVE //
       </div>
 
-      <div v-else class="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 xl:grid-cols-12 gap-[2px]">
+      <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
         <div
           v-for="(photo, idx) in editablePhotos"
           :key="photo.id"
@@ -150,30 +150,30 @@
           </div>
 
           <!-- Hover action overlay -->
-          <div class="absolute inset-0 bg-void/85 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex flex-col items-stretch justify-center gap-[2px] p-[3px]">
+          <div class="absolute inset-0 bg-void/85 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex flex-col items-stretch justify-center gap-1 p-2">
             <button
               :class="[
-                'font-label text-[8px] leading-none py-[3px] border text-center transition-colors',
+                'font-label text-[10px] leading-none py-1.5 border text-center transition-colors',
                 photo.in_gallery
                   ? 'border-dust/50 text-dust hover:border-neon-red hover:text-neon-red'
                   : 'border-phosphor/50 text-phosphor hover:bg-phosphor/20'
               ]"
               @click.stop="handleToggleGallery(photo)"
-            >{{ photo.in_gallery ? '-GAL' : '+GAL' }}</button>
+            >{{ photo.in_gallery ? '— GALLERY' : '+ GALLERY' }}</button>
             <button
               v-if="!photo.is_public"
-              class="font-label text-[8px] leading-none py-[3px] border border-chrome/40 text-chrome hover:bg-chrome/20 transition-colors text-center"
+              class="font-label text-[10px] leading-none py-1.5 border border-amber/60 text-amber hover:bg-amber/10 transition-colors text-center"
               @click.stop="openPublishModal(photo)"
-            >FEED</button>
+            >+ FEED</button>
             <button
               v-else
-              class="font-label text-[8px] leading-none py-[3px] border border-dust/40 text-dust hover:bg-dust/20 transition-colors text-center"
+              class="font-label text-[10px] leading-none py-1.5 border border-dust/40 text-dust hover:bg-dust/20 transition-colors text-center"
               @click.stop="handleUnpublish(photo)"
-            >UNFEED</button>
+            >— FEED</button>
             <button
-              class="font-label text-[8px] leading-none py-[3px] border border-neon-red/50 text-neon-red hover:bg-neon-red/20 transition-colors text-center"
+              class="font-label text-[10px] leading-none py-1.5 border border-neon-red/50 text-neon-red hover:bg-neon-red/20 transition-colors text-center"
               @click.stop="handleDelete(photo)"
-            >DEL</button>
+            >DELETE</button>
           </div>
         </div>
       </div>

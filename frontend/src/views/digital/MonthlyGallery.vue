@@ -82,11 +82,15 @@
 
         <!-- Media list -->
         <div class="flex-1 overflow-y-auto border border-gridColor p-2 bg-void space-y-4">
-          <div v-if="googleLoading" class="flex items-center justify-center h-full font-body text-phosphor">
-            QUERYING GOOGLE PHOTO CLOUD<span class="cursor">...</span>
+          <div v-if="googleLoading && googlePickerStatus === 'pending'" class="flex items-center justify-center h-full font-body text-phosphor">
+            AUTHORIZING WITH GOOGLE<span class="cursor">...</span>
+          </div>
+          <div v-else-if="googleLoading && googlePickerStatus === 'picking'" class="flex flex-col items-center justify-center h-full gap-3 text-center">
+            <p class="font-body text-phosphor">SELECT PHOTOS IN THE GOOGLE POPUP<span class="cursor">...</span></p>
+            <p class="font-label text-dust text-xs">Click "Done" in the Google Photos window when finished</p>
           </div>
           <div v-else-if="googleMediaItems.length === 0" class="flex items-center justify-center h-full font-label text-fog">
-            // NO RECENT PHOTOS DETECTED IN CLOUD //
+            // NO PHOTOS SELECTED //
           </div>
           <div v-else class="grid grid-cols-3 sm:grid-cols-4 gap-3">
             <div 
@@ -96,7 +100,7 @@
                        selectedGoogleIds.includes(item.id) ? 'border-phosphor shadow-[0_0_4px_#00FF94]' : 'border-gridColor hover:border-dust']"
               @click="toggleGoogleSelect(item)"
             >
-              <img :src="item.baseUrl" class="w-full h-full object-cover" alt="cloud photo" />
+              <img :src="item.thumbnailDataUrl || item.baseUrl" class="w-full h-full object-cover" alt="cloud photo" />
               <!-- Selection indicator -->
               <div v-if="selectedGoogleIds.includes(item.id)" class="absolute top-1 right-1 bg-phosphor text-void font-label text-[9px] px-1 font-bold">
                 SEL
@@ -166,10 +170,11 @@ export default {
     // Google Photos Picker state
     const showGooglePicker = ref(false);
     const googleLoading = ref(false);
+    const googlePickerStatus = ref('pending'); // 'pending' | 'picking' | 'done'
+    const googleImportSessionId = ref(null);
     const importingGoogle = ref(false);
     const googleMediaItems = ref([]);
     const selectedGooglePhotos = ref([]);
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
     const gallery = computed(() => digitalStore.currentGallery);
     const photos = computed(() => digitalStore.currentPhotos);
@@ -178,12 +183,6 @@ export default {
     const selectedGoogleIds = computed(() => selectedGooglePhotos.value.map(p => p.id));
 
     onMounted(async () => {
-      // Load Google Sign-In SDK
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      document.head.appendChild(script);
-
       await loadGallery();
     });
 
@@ -215,61 +214,75 @@ export default {
       }
     };
 
-    // Google Photos Picker OAuth and Loading
-    const triggerGooglePhotosPicker = () => {
-      if (!googleClientId) {
-        alert('Google Client ID configuration missing. Please review backend setup.');
-        return;
-      }
-
-      if (typeof google === 'undefined') {
-        alert('Google Identity library loading... Try again in a moment.');
-        return;
-      }
-
+    // Google Photos Picker — backend-managed OAuth popup with server-side polling.
+    // Flow: OAuth popup → backend creates Picker session → popup redirects to Google's picker UI
+    // → user picks photos → frontend polls until mediaItemsSet → show items for import.
+    const triggerGooglePhotosPicker = async () => {
       googleLoading.value = true;
+      googlePickerStatus.value = 'pending';
+      googleImportSessionId.value = null;
       showGooglePicker.value = true;
       selectedGooglePhotos.value = [];
+      googleMediaItems.value = [];
 
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: googleClientId,
-        scope: 'https://www.googleapis.com/auth/photoslibrary.readonly',
-        callback: async (tokenResponse) => {
-          if (tokenResponse.error) {
+      let pollTimer = null;
+      let timeoutTimer = null;
+
+      const stopPolling = () => {
+        if (pollTimer) clearInterval(pollTimer);
+        if (timeoutTimer) clearTimeout(timeoutTimer);
+        pollTimer = null;
+        timeoutTimer = null;
+      };
+
+      try {
+        const { url, sessionId } = await digitalStore.getGooglePhotosOAuthUrl();
+        window.open(url, 'google-photos-auth', 'width=600,height=720,left=300,top=80');
+
+        pollTimer = setInterval(async () => {
+          try {
+            const result = await digitalStore.pollGooglePhotosSession(sessionId);
+            if (result.status === 'done') {
+              stopPolling();
+              googlePickerStatus.value = 'done';
+              googleMediaItems.value = result.items || [];
+              googleImportSessionId.value = result.importSessionId;
+              googleLoading.value = false;
+            } else if (result.status === 'error') {
+              stopPolling();
+              googleLoading.value = false;
+              showGooglePicker.value = false;
+              alert('Google Photos failed: ' + result.error);
+            } else if (result.status === 'picking') {
+              googlePickerStatus.value = 'picking';
+            }
+            // status === 'pending' → keep polling
+          } catch (err) {
+            // 404 means session expired (user closed popup without completing)
+            if (err.response?.status === 404) {
+              stopPolling();
+              googleLoading.value = false;
+              showGooglePicker.value = false;
+            }
+          }
+        }, 2000);
+
+        // Hard timeout after 10 minutes (picker UI may take a while)
+        timeoutTimer = setTimeout(() => {
+          stopPolling();
+          if (googleLoading.value) {
             googleLoading.value = false;
             showGooglePicker.value = false;
-            alert('OAuth connection failed: ' + tokenResponse.error_description);
-            return;
           }
-          if (tokenResponse.access_token) {
-            await fetchGooglePhotos(tokenResponse.access_token);
-          }
-        }
-      });
-
-      tokenClient.requestAccessToken();
-    };
-
-    const fetchGooglePhotos = async (accessToken) => {
-      try {
-        // Query google photos API endpoints via CORS (supported for mediaItems list)
-        const response = await fetch('https://photoslibrary.googleapis.com/v1/mediaItems?pageSize=24', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Failed to query media Items: ' + response.statusText);
-        }
-        const data = await response.json();
-        googleMediaItems.value = data.mediaItems || [];
+        }, 10 * 60 * 1000);
       } catch (err) {
-        alert('Photos fetch failure: ' + err.message);
-        showGooglePicker.value = false;
-      } finally {
+        stopPolling();
         googleLoading.value = false;
+        showGooglePicker.value = false;
+        alert('Failed to start Google Photos: ' + (err.response?.data?.error || err.message));
       }
     };
+
 
     const toggleGoogleSelect = (item) => {
       const idx = selectedGooglePhotos.value.findIndex(p => p.id === item.id);
@@ -287,10 +300,11 @@ export default {
         const payload = selectedGooglePhotos.value.map(item => ({
           id: item.id,
           baseUrl: item.baseUrl,
-          filename: item.filename || 'google_photos_import.jpg'
+          filename: item.filename || 'google_photos_import.jpg',
+          creationTime: item.creationTime || null
         }));
 
-        await digitalStore.importGooglePhotos(gallery.value.id, payload);
+        await digitalStore.importGooglePhotos(gallery.value.id, payload, googleImportSessionId.value);
         showGooglePicker.value = false;
       } catch (err) {
         alert('Google Import processing failure: ' + err.message);
@@ -331,6 +345,8 @@ export default {
       lightboxOpen,
       showGooglePicker,
       googleLoading,
+      googlePickerStatus,
+      googleImportSessionId,
       importingGoogle,
       googleMediaItems,
       selectedGooglePhotos,

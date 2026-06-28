@@ -65,11 +65,7 @@ export const useAnalogStore = defineStore('analog', {
     },
     async uploadPhotos(galleryId, formData) {
       try {
-        const response = await api.post(`/analog/galleries/${galleryId}/photos`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
+        const response = await api.post(`/analog/galleries/${galleryId}/photos`, formData);
         await this.fetchGalleryDetail(galleryId);
         return response.data;
       } catch (error) {

@@ -321,6 +321,10 @@
   gap: 2px;
 }
 
+.grid-photos .pcard {
+  aspect-ratio: 3 / 2;
+}
+
 /* ---------- drop zone ---------- */
 .drop {
   border: 1px dashed var(--phosphor);

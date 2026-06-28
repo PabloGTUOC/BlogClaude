@@ -2,13 +2,19 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const db = require('../db');
-const { verifyJWT, requireApproved } = require('../middleware/auth');
+const { verifyJWT, requireApproved, requireFamily } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { processUpload } = require('../services/sharp');
 const { importGooglePhoto } = require('../services/googlePhotos');
 
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads');
+
+// In-memory store for Google Photos OAuth sessions (cleared after use or 10 min timeout)
+const oauthSessions = new Map();
+// Holds access tokens between poll-done and the subsequent import request (30 min TTL)
+const importSessions = new Map();
 
 // Helper to delete physical files
 function deletePhotoFiles(photo) {
@@ -26,8 +32,204 @@ function deletePhotoFiles(photo) {
   }
 }
 
-// All digital routes require a valid approved user
-router.use(verifyJWT, requireApproved);
+// GET /api/digital/google-photos/oauth-url
+// Returns a one-time Google OAuth URL + sessionId. Frontend opens this URL in a popup.
+router.get('/google-photos/oauth-url', verifyJWT, (req, res) => {
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientSecret) {
+    return res.status(500).json({ error: 'Google client secret not configured', code: 'CONFIG_ERROR' });
+  }
+
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  const apiOrigin = process.env.API_ORIGIN || 'http://localhost:3000';
+
+  const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+    client_id: process.env.VITE_GOOGLE_CLIENT_ID,
+    redirect_uri: `${apiOrigin}/api/digital/google-photos/callback`,
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+    access_type: 'online',
+    prompt: 'consent',
+    state: sessionId
+  });
+
+  oauthSessions.set(sessionId, { status: 'pending' });
+  setTimeout(() => oauthSessions.delete(sessionId), 10 * 60 * 1000);
+
+  res.json({ url: authUrl.toString(), sessionId });
+});
+
+// GET /api/digital/google-photos/callback
+// OAuth redirect target — no JWT, receives the code from Google, exchanges it, fetches photos,
+// then sends a postMessage to the opener popup and closes.
+router.get('/google-photos/callback', async (req, res) => {
+  const { code, state: sessionId, error } = req.query;
+  const apiOrigin = process.env.API_ORIGIN || 'http://localhost:3000';
+
+  const closeWithError = (msg) => {
+    if (sessionId && oauthSessions.has(sessionId)) {
+      oauthSessions.set(sessionId, { status: 'error', error: msg });
+    }
+    res.send('<!DOCTYPE html><html><body><script>window.close();</script></body></html>');
+  };
+
+  if (error || !code) {
+    return closeWithError(error || 'no_code');
+  }
+
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  try {
+    // Exchange code for access token
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.VITE_GOOGLE_CLIENT_ID,
+        client_secret: clientSecret,
+        redirect_uri: `${apiOrigin}/api/digital/google-photos/callback`,
+        grant_type: 'authorization_code'
+      }).toString()
+    });
+
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok) {
+      console.error('[GooglePhotos] Token exchange failed:', tokenData);
+      return closeWithError(tokenData.error_description || tokenData.error || 'token_exchange_failed');
+    }
+
+    console.log('[GooglePhotos] Token exchange OK, scopes:', tokenData.scope);
+
+    // Create a Photos Picker session — gives us a pickerUri to redirect the popup into.
+    const pickerRes = await fetch('https://photospicker.googleapis.com/v1/sessions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const pickerSession = await pickerRes.json();
+
+    if (!pickerRes.ok) {
+      console.error('[GooglePhotos] Picker session creation failed:', pickerSession);
+      return closeWithError(pickerSession?.error?.message || 'picker_session_failed');
+    }
+
+    console.log('[GooglePhotos] Picker session created:', pickerSession.id);
+
+    if (sessionId && oauthSessions.has(sessionId)) {
+      oauthSessions.set(sessionId, {
+        status: 'picking',
+        pickerSessionId: pickerSession.id,
+        accessToken: tokenData.access_token
+      });
+    }
+
+    // Redirect the popup into Google's own photo picker UI
+    res.redirect(pickerSession.pickerUri);
+  } catch (err) {
+    console.error('[GooglePhotos] Callback error:', err);
+    if (sessionId && oauthSessions.has(sessionId)) {
+      oauthSessions.set(sessionId, { status: 'error', error: 'server_error' });
+    }
+    res.send('<!DOCTYPE html><html><body><script>window.close();</script></body></html>');
+  }
+});
+
+// GET /api/digital/google-photos/picker-done
+// Google redirects the picker popup here after the user confirms their selection.
+// Just closes the window — the frontend is already polling the backend for status.
+router.get('/google-photos/picker-done', (req, res) => {
+  res.send('<!DOCTYPE html><html><body><script>window.close();</script></body></html>');
+});
+
+// GET /api/digital/google-photos/poll/:sessionId
+// Frontend polls this every 2s. Handles three phases:
+//   'pending'  — waiting for OAuth callback
+//   'picking'  — OAuth done, user is selecting in Google's picker popup
+//   'done'     — items selected, returned to frontend
+router.get('/google-photos/poll/:sessionId', verifyJWT, async (req, res) => {
+  const session = oauthSessions.get(req.params.sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found or expired', code: 'SESSION_NOT_FOUND' });
+  }
+
+  if (session.status === 'picking') {
+    try {
+      const pickerRes = await fetch(`https://photospicker.googleapis.com/v1/sessions/${session.pickerSessionId}`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+      const pickerData = await pickerRes.json();
+
+      if (!pickerRes.ok) {
+        console.error('[GooglePhotos] Picker session check failed:', pickerData);
+        oauthSessions.delete(req.params.sessionId);
+        return res.json({ status: 'error', error: pickerData?.error?.message || 'picker_check_failed' });
+      }
+
+      if (pickerData.mediaItemsSet) {
+        const itemsRes = await fetch(`https://photospicker.googleapis.com/v1/mediaItems?sessionId=${session.pickerSessionId}`, {
+          headers: { Authorization: `Bearer ${session.accessToken}` }
+        });
+        const itemsData = await itemsRes.json();
+
+        // Fetch small thumbnails server-side — Picker API baseUrls require auth so <img> tags
+        // can't load them directly. We return base64 data URLs the browser can display without headers.
+        const items = await Promise.all((itemsData.mediaItems || []).map(async item => {
+          const baseUrl = item.mediaFile?.baseUrl;
+          let thumbnailDataUrl = null;
+          if (baseUrl) {
+            try {
+              const thumbRes = await fetch(`${baseUrl}=w200-h200`, {
+                headers: { Authorization: `Bearer ${session.accessToken}` }
+              });
+              if (thumbRes.ok) {
+                const buf = Buffer.from(await thumbRes.arrayBuffer());
+                const mime = thumbRes.headers.get('content-type') || 'image/jpeg';
+                thumbnailDataUrl = `data:${mime};base64,${buf.toString('base64')}`;
+              }
+            } catch (e) { /* non-fatal — img will fall back to placeholder */ }
+          }
+          return {
+            id: item.id,
+            baseUrl,
+            thumbnailDataUrl,
+            filename: item.mediaFile?.filename || 'photo.jpg',
+            creationTime: item.createTime
+          };
+        }));
+
+        console.log(`[GooglePhotos] Picker done — ${items.length} items selected`);
+
+        // Stash the access token so the import route can auth the image downloads.
+        // We don't send the real token to the frontend — just an opaque session key.
+        const importSessionId = crypto.randomBytes(16).toString('hex');
+        importSessions.set(importSessionId, session.accessToken);
+        setTimeout(() => importSessions.delete(importSessionId), 30 * 60 * 1000);
+
+        oauthSessions.delete(req.params.sessionId);
+        return res.json({ status: 'done', items, importSessionId });
+      }
+
+      // User is still picking
+      return res.json({ status: 'picking' });
+    } catch (err) {
+      console.error('[GooglePhotos] Poll error:', err);
+      oauthSessions.delete(req.params.sessionId);
+      return res.json({ status: 'error', error: 'server_error' });
+    }
+  }
+
+  // 'pending' stays in map; 'done' / 'error' are cleaned up
+  if (session.status !== 'pending') {
+    oauthSessions.delete(req.params.sessionId);
+  }
+  res.json(session);
+});
+
+// Digital routes require family or admin (friends only get analog)
+router.use(verifyJWT, requireFamily);
 
 // GET /api/digital/galleries - List monthly galleries for timeline
 router.get('/galleries', async (req, res) => {
@@ -59,7 +261,7 @@ router.get('/galleries/:idOrYearMonth', async (req, res) => {
     let params;
 
     if (isYearMonth) {
-      galleryQuery = 'SELECT * FROM digital_galleries WHERE year_month = ?';
+      galleryQuery = 'SELECT * FROM digital_galleries WHERE `year_month` = ?';
       params = [param];
     } else {
       galleryQuery = 'SELECT * FROM digital_galleries WHERE id = ?';
@@ -78,7 +280,10 @@ router.get('/galleries/:idOrYearMonth', async (req, res) => {
       FROM photos p
       LEFT JOIN users u ON p.uploaded_by = u.id
       WHERE p.digital_gallery_id = ?
-      ORDER BY p.created_at DESC
+      ORDER BY COALESCE(
+        JSON_UNQUOTE(JSON_EXTRACT(p.exif_json, '$.DateTimeOriginal')),
+        p.created_at
+      ) ASC
     `;
     const photos = await db.query(photosQuery, [gallery.id]);
 
@@ -102,7 +307,7 @@ router.post('/galleries', async (req, res) => {
 
   try {
     // 1. Check for existing monthly gallery
-    const existing = await db.query('SELECT id FROM digital_galleries WHERE year_month = ?', [year_month]);
+    const existing = await db.query('SELECT id FROM digital_galleries WHERE `year_month` = ?', [year_month]);
     if (existing.length > 0) {
       return res.status(409).json({
         error: 'Gallery for this month already exists',
@@ -113,7 +318,7 @@ router.post('/galleries', async (req, res) => {
 
     // 2. Create monthly gallery
     const insertResult = await db.query(
-      'INSERT INTO digital_galleries (year_month, display_name, created_by) VALUES (?, ?, ?)',
+      'INSERT INTO digital_galleries (`year_month`, display_name, created_by) VALUES (?, ?, ?)',
       [year_month, display_name, req.user.id]
     );
 
@@ -188,16 +393,23 @@ router.post('/galleries/:id/photos', async (req, res) => {
     });
   } else {
     // Google Photos Import processing
-    const { source, googlePhotos } = req.body;
+    const { source, googlePhotos, importSessionId } = req.body;
 
     if (source !== 'google_photos' || !googlePhotos || !Array.isArray(googlePhotos) || googlePhotos.length === 0) {
       return res.status(400).json({ error: 'Invalid body parameters', code: 'INVALID_INPUT' });
     }
 
+    // Retrieve the access token stored by the poll endpoint — needed to download Picker API images
+    const accessToken = importSessionId ? importSessions.get(importSessionId) : null;
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Import session expired or missing. Please re-import from Google Photos.', code: 'IMPORT_SESSION_EXPIRED' });
+    }
+    importSessions.delete(importSessionId);
+
     const results = [];
     try {
       for (const item of googlePhotos) {
-        const processed = await importGooglePhoto(item.baseUrl, item.filename);
+        const processed = await importGooglePhoto(item.baseUrl, item.filename, item.creationTime, accessToken);
 
         const [insertResult] = await db.pool.query(
           `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, exif_json, uploaded_by, source, google_photos_id) 

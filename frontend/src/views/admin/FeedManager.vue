@@ -6,15 +6,15 @@
           FEED CURATION COCKPIT
         </h2>
         <p class="text-xs font-body text-fog mt-1">
-          Manage, sort, and curate published frames and drafts. Drag rows to reorder.
+          Published frames only. Push photos to feed from the gallery admin view.
         </p>
       </div>
 
       <div class="flex gap-2 select-none self-end sm:self-auto">
-        <button class="btn btn--sm" @click="showLibraryModal = true">
-          [ + CURATE FROM LIBRARY ]
-        </button>
-        <button class="btn btn--sm" :disabled="saving" @click="saveChanges">
+        <router-link to="/admin/analog" class="btn btn--ghost btn--sm text-xs">
+          [ ◀ GO TO GALLERIES ]
+        </router-link>
+        <button class="btn btn--sm text-xs" :disabled="saving" @click="saveChanges">
           <span v-if="saving">SAVING<span class="cursor">_</span></span>
           <span v-else>[ COMMIT CHANGES ]</span>
         </button>
@@ -25,7 +25,6 @@
     <div v-if="selectedIds.length > 0" class="flex items-center gap-3 p-3 border border-neon-red/50 bg-neon-red/5 select-none text-xs font-label">
       <span class="text-neon-red font-bold">{{ selectedIds.length }} FRAMES SELECTED //</span>
       <button class="btn btn--ghost btn--sm py-1" @click="bulkUnpublish">[ BULK UNPUBLISH ]</button>
-      <button class="btn btn--danger btn--sm py-1" @click="bulkDelete">[ BULK SCRAP ]</button>
       <button class="ml-auto text-[10px] text-dust hover:underline" @click="selectedIds = []">[ CLEAR SELECTION ]</button>
     </div>
 
@@ -34,8 +33,9 @@
       QUERYING DATABASE STACKS<span class="cursor">...</span>
     </div>
 
-    <div v-else-if="editablePhotos.length === 0" class="text-xs font-body text-fog py-20 border border-dashed border-gridColor text-center select-none">
-      // NO PUBLIC FEED FRAMES CURRENTLY ACTIVE //
+    <div v-else-if="editablePhotos.length === 0" class="text-xs font-body text-fog py-20 border border-dashed border-gridColor text-center select-none space-y-2">
+      <div>// NO FRAMES PUBLISHED TO FEED YET //</div>
+      <div class="text-dust">Navigate to a gallery in the admin panel and use the <span class="text-chrome">FEED</span> button on any photo.</div>
     </div>
 
     <div v-else class="overflow-x-auto border border-gridColor bg-surface">
@@ -49,7 +49,6 @@
             <th class="p-3">Caption &amp; Tags</th>
             <th class="p-3 w-20">Sort #</th>
             <th class="p-3 w-28 text-center">Status</th>
-            <th class="p-3 w-16 text-right">Del</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gridColor/50">
@@ -64,27 +63,21 @@
             @drop.prevent="onDrop(idx)"
             @dragend="onDragEnd"
           >
-            <!-- Drag handle -->
             <td class="p-3 text-center text-dust cursor-grab active:cursor-grabbing select-none text-base leading-none">⠿</td>
-            <!-- Select -->
             <td class="p-3"><input type="checkbox" :value="photo.id" v-model="selectedIds" /></td>
-            <!-- Thumbnail -->
             <td class="p-3 select-none">
               <img :src="getThumbUrl(photo)" class="w-12 h-12 border border-gridColor object-cover" alt="thumb" />
             </td>
-            <!-- Origin -->
             <td class="p-3 text-[10px] text-fog leading-relaxed uppercase">
               <div>{{ photo.zone }}</div>
               <div class="text-dust text-[9px] truncate max-w-[110px]">{{ photo.analog_gallery_title || photo.digital_gallery_name || 'N/A' }}</div>
             </td>
-            <!-- Caption + Tags -->
             <td class="p-3 space-y-2">
               <input
                 v-model="photo.caption"
                 class="w-full bg-void border border-gridColor/60 p-1.5 focus:border-phosphor focus:outline-none text-chrome"
                 placeholder="Empty caption..."
               />
-              <!-- Tag pills -->
               <div class="flex flex-wrap gap-1 items-center">
                 <span
                   v-for="tag in getPhotoTags(photo)"
@@ -104,7 +97,6 @@
                 </select>
               </div>
             </td>
-            <!-- Sort order -->
             <td class="p-3">
               <input
                 v-model.number="photo.sort_order"
@@ -112,71 +104,21 @@
                 class="w-16 bg-void border border-gridColor/60 p-1.5 focus:border-phosphor focus:outline-none text-chrome text-center"
               />
             </td>
-            <!-- Status toggle -->
             <td class="p-3 text-center select-none font-label">
               <button
                 :class="['btn btn--sm py-1 w-24 text-[10px]', photo.is_public ? 'border-phosphor text-phosphor' : 'border-dust text-dust']"
                 @click="photo.is_public = !photo.is_public"
               >[ {{ photo.is_public ? 'PUBLIC' : 'MUTED' }} ]</button>
             </td>
-            <!-- Delete -->
-            <td class="p-3 text-right select-none">
-              <button class="text-neon-red hover:underline text-[10px]" @click="deleteSingle(photo.id)">[ SCRAP ]</button>
-            </td>
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- LIBRARY PICKER MODAL -->
-    <div v-if="showLibraryModal" class="fixed inset-0 z-[400] bg-void/90 flex items-center justify-center p-6" @click.self="showLibraryModal = false">
-      <div class="demo bracket max-w-[680px] w-full bg-surface border border-gridColor p-6 flex flex-col h-[80vh]">
-        <span class="br-tr"></span><span class="br-bl"></span>
-
-        <header class="mb-4">
-          <h3 class="text-white font-display text-2xl uppercase mb-1 text-shadow-phosphor">// LIBRARY PRIVATE LOG //</h3>
-          <p class="text-xs font-body text-dust">Select unpublished scans from the library to queue into public feed</p>
-        </header>
-
-        <div class="flex-1 overflow-y-auto border border-gridColor p-3 bg-void">
-          <div v-if="libraryLoading" class="flex items-center justify-center h-full font-body text-phosphor">
-            SCANNING LOG STORAGE<span class="cursor">...</span>
-          </div>
-          <div v-else-if="libraryPhotos.length === 0" class="flex items-center justify-center h-full font-label text-fog">
-            // NO PRIVATE LIBRARY PHOTOS DETECTED //
-          </div>
-          <div v-else class="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            <div
-              v-for="item in libraryPhotos"
-              :key="item.id"
-              :class="['relative border cursor-pointer aspect-square bg-panel overflow-hidden',
-                       selectedLibraryIds.includes(item.id) ? 'border-phosphor shadow-[0_0_4px_#00FF94]' : 'border-gridColor hover:border-dust']"
-              @click="toggleLibrarySelect(item)"
-            >
-              <img :src="getThumbUrl(item)" class="w-full h-full object-cover" alt="library thumb" />
-              <div class="absolute bottom-0 left-0 right-0 bg-void/80 p-1 text-[8px] font-body text-dust truncate">
-                {{ item.zone.toUpperCase() }} // {{ item.filename.split('/').pop() }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-between items-center mt-4 border-t border-gridColor/50 pt-4 select-none">
-          <span class="text-xs font-body text-fog">{{ selectedLibraryPhotos.length }} SELECTIONS QUEUED</span>
-          <div class="flex gap-2">
-            <button class="btn btn--ghost text-xs" @click="showLibraryModal = false">[ CLOSE ]</button>
-            <button class="btn text-xs" :disabled="selectedLibraryPhotos.length === 0" @click="publishLibrarySelections">
-              [ STAGE SELECTIONS ]
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAdminStore } from '@/stores/admin';
 
 export default {
@@ -186,13 +128,6 @@ export default {
     const saving = ref(false);
     const selectedIds = ref([]);
     const editablePhotos = ref([]);
-
-    const showLibraryModal = ref(false);
-    const libraryLoading = ref(false);
-    const libraryPhotos = ref([]);
-    const selectedLibraryPhotos = ref([]);
-
-    // Drag-and-drop state
     const dragSourceIdx = ref(null);
     const dragOverIdx = ref(null);
 
@@ -203,7 +138,6 @@ export default {
     const isAllSelected = computed(() =>
       editablePhotos.value.length > 0 && selectedIds.value.length === editablePhotos.value.length
     );
-    const selectedLibraryIds = computed(() => selectedLibraryPhotos.value.map(p => p.id));
 
     const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace('/api', '');
 
@@ -212,7 +146,8 @@ export default {
     });
 
     const loadFeed = async () => {
-      await adminStore.fetchFeedPhotos(1, 100);
+      // Always load only published feed photos
+      await adminStore.fetchFeedPhotos(1, 200, true);
       editablePhotos.value = JSON.parse(JSON.stringify(feedPhotos.value)).map(p => ({
         ...p,
         tags: parseTags(p.tags)
@@ -255,21 +190,11 @@ export default {
       photo.tags = parseTags(photo.tags).filter(t => t.id !== tagId);
     };
 
-    // Drag-and-drop handlers
-    const onDragStart = (idx) => {
-      dragSourceIdx.value = idx;
-    };
-
+    const onDragStart = (idx) => { dragSourceIdx.value = idx; };
     const onDragOver = (idx) => {
-      if (dragSourceIdx.value !== null && dragSourceIdx.value !== idx) {
-        dragOverIdx.value = idx;
-      }
+      if (dragSourceIdx.value !== null && dragSourceIdx.value !== idx) dragOverIdx.value = idx;
     };
-
-    const onDragLeave = () => {
-      dragOverIdx.value = null;
-    };
-
+    const onDragLeave = () => { dragOverIdx.value = null; };
     const onDrop = (targetIdx) => {
       if (dragSourceIdx.value === null || dragSourceIdx.value === targetIdx) return;
       const moved = editablePhotos.value.splice(dragSourceIdx.value, 1)[0];
@@ -278,21 +203,10 @@ export default {
       dragSourceIdx.value = null;
       dragOverIdx.value = null;
     };
-
-    const onDragEnd = () => {
-      dragSourceIdx.value = null;
-      dragOverIdx.value = null;
-    };
+    const onDragEnd = () => { dragSourceIdx.value = null; dragOverIdx.value = null; };
 
     const toggleSelectAll = (e) => {
       selectedIds.value = e.target.checked ? editablePhotos.value.map(p => p.id) : [];
-    };
-
-    const deleteSingle = async (id) => {
-      if (confirm('CRITICAL WARN: HARD SCRAP THIS SCAN? THIS CANNOT BE UNDONE.')) {
-        await adminStore.hardDeletePhoto(id);
-        await loadFeed();
-      }
     };
 
     const saveChanges = async () => {
@@ -320,9 +234,8 @@ export default {
           }
         }
         await loadFeed();
-        alert('Curation database updates committed successfully.');
       } catch (err) {
-        alert('Commit Failure: ' + err.message);
+        alert('Commit failure: ' + err.message);
       } finally {
         saving.value = false;
       }
@@ -340,85 +253,11 @@ export default {
       }
     };
 
-    const bulkDelete = async () => {
-      if (confirm(`CRITICAL WARN: THIS WILL HARD SCRAP ALL ${selectedIds.value.length} SELECTED IMAGES. PROCEED?`)) {
-        try {
-          for (const id of selectedIds.value) {
-            await adminStore.hardDeletePhoto(id);
-          }
-          selectedIds.value = [];
-          await loadFeed();
-        } catch (err) {
-          alert('Bulk scrap failure: ' + err.message);
-        }
-      }
-    };
-
-    watch(showLibraryModal, async (isOpen) => {
-      if (isOpen) {
-        libraryLoading.value = true;
-        selectedLibraryPhotos.value = [];
-        try {
-          await adminStore.fetchFeedPhotos(1, 200);
-          libraryPhotos.value = adminStore.feedPhotos.filter(p => !p.is_public);
-        } catch (err) {
-          console.error(err);
-        } finally {
-          libraryLoading.value = false;
-        }
-      } else {
-        await loadFeed();
-      }
-    });
-
-    const toggleLibrarySelect = (item) => {
-      const idx = selectedLibraryPhotos.value.findIndex(p => p.id === item.id);
-      if (idx === -1) selectedLibraryPhotos.value.push(item);
-      else selectedLibraryPhotos.value.splice(idx, 1);
-    };
-
-    const publishLibrarySelections = async () => {
-      try {
-        for (const item of selectedLibraryPhotos.value) {
-          await adminStore.updatePhotoCuration(item.id, { is_public: true });
-        }
-        showLibraryModal.value = false;
-        await loadFeed();
-      } catch (err) {
-        alert('Curation staging failure: ' + err.message);
-      }
-    };
-
     return {
-      saving,
-      selectedIds,
-      editablePhotos,
-      loading,
-      isAllSelected,
-      allTags,
-      dragOverIdx,
-      getThumbUrl,
-      getPhotoTags,
-      availableTagsForPhoto,
-      addPhotoTag,
-      removePhotoTag,
-      toggleSelectAll,
-      deleteSingle,
-      saveChanges,
-      bulkUnpublish,
-      bulkDelete,
-      onDragStart,
-      onDragOver,
-      onDragLeave,
-      onDrop,
-      onDragEnd,
-      showLibraryModal,
-      libraryLoading,
-      libraryPhotos,
-      selectedLibraryPhotos,
-      selectedLibraryIds,
-      toggleLibrarySelect,
-      publishLibrarySelections
+      saving, selectedIds, editablePhotos, loading, isAllSelected, allTags, dragOverIdx,
+      getThumbUrl, getPhotoTags, availableTagsForPhoto, addPhotoTag, removePhotoTag,
+      toggleSelectAll, saveChanges, bulkUnpublish,
+      onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd
     };
   }
 };

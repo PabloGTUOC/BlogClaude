@@ -1,6 +1,6 @@
 <template>
   <div class="wrap py-12">
-    <!-- Header with Dynamic Creation Action Trigger -->
+    <!-- Header -->
     <header class="flex flex-col md:flex-row md:items-center justify-between border-b border-gridColor pb-6 mb-8 gap-4">
       <div>
         <div class="kicker mb-2">// DIGITAL ZONE // TIMELINE</div>
@@ -12,25 +12,51 @@
         </p>
       </div>
 
-      <!-- Action Button for current month -->
-      <div class="select-none self-end md:self-auto">
-        <router-link 
-          v-if="currentMonthExists" 
+      <!-- Action buttons -->
+      <div class="flex flex-wrap gap-2 select-none self-end md:self-auto">
+        <router-link
+          v-if="currentMonthExists"
           :to="`/digital/${currentMonthStr}`"
           class="btn text-xs"
         >
           [ ADD YOUR PHOTOS ]
         </router-link>
-        <button 
-          v-else 
+        <button
+          v-else
           class="btn text-xs"
           :disabled="creating"
           @click="startCurrentMonthGallery"
         >
           [ START {{ currentMonthName.toUpperCase() }} GALLERY ]
         </button>
+        <button class="btn btn--ghost text-xs" @click="showPicker = !showPicker">
+          [ OPEN OTHER MONTH ]
+        </button>
       </div>
     </header>
+
+    <!-- Month picker for any month -->
+    <div v-if="showPicker" class="border border-gridColor bg-surface p-5 space-y-3 mb-8">
+      <h3 class="text-[10px] font-label text-dust uppercase select-none">// OPEN OR CREATE A SPECIFIC MONTH</h3>
+      <form class="flex flex-wrap gap-3 items-end" @submit.prevent="openMonth">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-label text-dust uppercase">Year</label>
+          <input v-model.number="picker.year" type="number" min="2000" :max="new Date().getFullYear()" required class="tinput w-24" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-label text-dust uppercase">Month</label>
+          <select v-model.number="picker.month" required class="tinput w-36">
+            <option v-for="(name, idx) in monthNames" :key="idx" :value="idx + 1">
+              {{ String(idx + 1).padStart(2, '0') }} — {{ name }}
+            </option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--sm text-xs" :disabled="creating">
+          {{ creating ? '[ OPENING... ]' : '[ GO ]' }}
+        </button>
+      </form>
+      <p v-if="pickerError" class="text-xs font-body text-neon-red">{{ pickerError }}</p>
+    </div>
 
     <!-- Timeline List -->
     <div v-if="loading" class="flex items-center justify-center py-20 font-body text-phosphor">
@@ -64,39 +90,32 @@ import { useRouter } from 'vue-router';
 import { useDigitalStore } from '@/stores/digital';
 import GalleryCard from '@/components/GalleryCard.vue';
 
+const MONTH_NAMES = ['January','February','March','April','May','June',
+  'July','August','September','October','November','December'];
+
 export default {
   name: 'DigitalMonthlyTimeline',
-  components: {
-    GalleryCard
-  },
+  components: { GalleryCard },
   setup() {
     const digitalStore = useDigitalStore();
     const router = useRouter();
     const creating = ref(false);
+    const showPicker = ref(false);
+    const pickerError = ref('');
+    const now = new Date();
+    const picker = ref({ year: now.getFullYear(), month: now.getMonth() + 1 });
 
     const galleries = computed(() => digitalStore.galleries);
     const loading = computed(() => digitalStore.loading);
 
-    const getYearMonthString = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    };
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const currentMonthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-    const getDisplayNameString = () => {
-      const d = new Date();
-      return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    };
+    const currentMonthExists = computed(() =>
+      galleries.value.some(g => g.year_month === currentMonthStr)
+    );
 
-    const currentMonthStr = getYearMonthString();
-    const currentMonthName = getDisplayNameString();
-
-    const currentMonthExists = computed(() => {
-      return galleries.value.some(g => g.year_month === currentMonthStr);
-    });
-
-    onMounted(() => {
-      digitalStore.fetchGalleries();
-    });
+    onMounted(() => { digitalStore.fetchGalleries(); });
 
     const startCurrentMonthGallery = async () => {
       creating.value = true;
@@ -105,10 +124,7 @@ export default {
           year_month: currentMonthStr,
           display_name: currentMonthName
         });
-
-        // Redirect to detail page (either newly created or existing 409 conflict redirect)
-        const targetYearMonth = result.conflict ? currentMonthStr : result.year_month;
-        router.push(`/digital/${targetYearMonth}`);
+        router.push(`/digital/${result.conflict ? currentMonthStr : result.year_month}`);
       } catch (err) {
         alert('Failed to initialize monthly gallery: ' + err.message);
       } finally {
@@ -116,14 +132,34 @@ export default {
       }
     };
 
+    const openMonth = async () => {
+      pickerError.value = '';
+      const yearMonth = `${picker.value.year}-${String(picker.value.month).padStart(2, '0')}`;
+      const displayName = `${MONTH_NAMES[picker.value.month - 1]} ${picker.value.year}`;
+
+      const existing = galleries.value.find(g => g.year_month === yearMonth);
+      if (existing) {
+        router.push(`/digital/${yearMonth}`);
+        return;
+      }
+
+      creating.value = true;
+      try {
+        const result = await digitalStore.createGallery({ year_month: yearMonth, display_name: displayName });
+        router.push(`/digital/${result.conflict ? yearMonth : result.year_month}`);
+      } catch (err) {
+        pickerError.value = err.response?.data?.error || err.message;
+      } finally {
+        creating.value = false;
+      }
+    };
+
     return {
-      galleries,
-      loading,
-      creating,
-      currentMonthStr,
-      currentMonthName,
-      currentMonthExists,
-      startCurrentMonthGallery
+      galleries, loading, creating,
+      currentMonthStr, currentMonthName, currentMonthExists,
+      startCurrentMonthGallery,
+      showPicker, picker, pickerError, openMonth,
+      monthNames: MONTH_NAMES
     };
   }
 };

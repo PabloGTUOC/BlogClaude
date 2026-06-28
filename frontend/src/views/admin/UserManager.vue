@@ -49,13 +49,14 @@
     </div>
 
     <div v-else class="space-y-4">
-      <UserRow 
-        v-for="u in usersList" 
-        :key="u.id" 
-        :user="u" 
+      <UserRow
+        v-for="u in usersList"
+        :key="u.id"
+        :user="u"
         @approve="handleApprove"
         @revoke="handleRevoke"
         @restore="handleRestore"
+        @role-updated="handleRoleUpdated"
       />
     </div>
   </div>
@@ -124,6 +125,14 @@ export default {
       }
     };
 
+    const handleRoleUpdated = async ({ userId, role, group }) => {
+      try {
+        await adminStore.updateUserRole(userId, role, group);
+      } catch (err) {
+        alert('Role update failed: ' + err.message);
+      }
+    };
+
     return {
       activeTab,
       loading,
@@ -132,7 +141,8 @@ export default {
       switchTab,
       handleApprove,
       handleRevoke,
-      handleRestore
+      handleRestore,
+      handleRoleUpdated
     };
   }
 };

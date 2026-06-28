@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
+import OAuthGooglePhotosCallback from '@/views/OAuthGooglePhotosCallback.vue';
 import Home from '@/views/Home.vue';
 import PhotoDetail from '@/views/PhotoDetail.vue';
 import About from '@/views/About.vue';
@@ -25,6 +26,9 @@ import AdminTagManager from '@/views/admin/TagManager.vue';
 import AdminUserManager from '@/views/admin/UserManager.vue';
 
 const routes = [
+  // OAuth callback for Google Photos popup — no auth guard, loads and closes immediately
+  { path: '/oauth/google-photos', name: 'OAuthGooglePhotosCallback', component: OAuthGooglePhotosCallback },
+
   { path: '/', name: 'Home', component: Home },
   { path: '/photo/:id', name: 'PhotoDetail', component: PhotoDetail },
   { path: '/about', name: 'About', component: About },

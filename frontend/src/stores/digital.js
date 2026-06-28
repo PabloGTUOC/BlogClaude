@@ -54,11 +54,7 @@ export const useDigitalStore = defineStore('digital', {
     },
     async uploadPhotos(galleryId, formData) {
       try {
-        const response = await api.post(`/digital/galleries/${galleryId}/photos`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
+        const response = await api.post(`/digital/galleries/${galleryId}/photos`, formData);
         await this.fetchGalleryDetail(galleryId);
         return response.data;
       } catch (error) {
@@ -66,11 +62,25 @@ export const useDigitalStore = defineStore('digital', {
         throw error;
       }
     },
-    async importGooglePhotos(galleryId, googlePhotosItems) {
+    async getGooglePhotosOAuthUrl() {
+      try {
+        const response = await api.get('/digital/google-photos/oauth-url');
+        return response.data; // { url, sessionId }
+      } catch (error) {
+        console.error('Failed to get Google Photos OAuth URL:', error);
+        throw error;
+      }
+    },
+    async pollGooglePhotosSession(sessionId) {
+      const response = await api.get(`/digital/google-photos/poll/${sessionId}`);
+      return response.data; // { status: 'pending' | 'done' | 'error', items?, error? }
+    },
+    async importGooglePhotos(galleryId, googlePhotosItems, importSessionId) {
       try {
         const response = await api.post(`/digital/galleries/${galleryId}/photos`, {
           source: 'google_photos',
-          googlePhotos: googlePhotosItems
+          googlePhotos: googlePhotosItems,
+          importSessionId
         });
         await this.fetchGalleryDetail(galleryId);
         return response.data;

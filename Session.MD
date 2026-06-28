@@ -1,201 +1,132 @@
 # Session Handoff — enderthoughts
 
-Last updated: 2026-06-12
+Last updated: 2026-06-26
 
 ---
 
-## What Was Completed This Session (2026-06-12)
+## Fixed This Session (2026-06-26)
 
-### Critical CSS Bug — FIXED
-10 CSS classes were used in templates but defined nowhere in the stylesheet. Added all definitions to `frontend/src/styles/components.css`:
-- `.nav`, `.nav__logo`, `.nav__tabs`, `.nav__auth`
-- `.tab`, `.tab--active`
-- `.hero`, `.hero__inner`
-- `.grain`
-- `.demo`
-
-### .impeccable.md — CREATED
-Design context file written to project root (`.impeccable.md`). Future `/impeccable` invocations will pick it up automatically without needing to re-gather context.
-
----
-
-## Pending Changes — Design Review (from /impeccable, 2026-06-12)
-
-### HIGH — Fix auth link scrolling off mobile nav
-
-**Problem:** `[ AUTHENTICATE ]` / logout button is inside `.nav__tabs` div. That div has `overflow-x: auto` with a hidden scrollbar, so on narrow screens the auth link can scroll off-screen — invisible and unreachable.
-
-**File:** `frontend/src/App.vue`
-
-Move the auth block out of `.nav__tabs` to be a direct child of `<nav>`:
-
-```html
-<nav class="nav">
-  <router-link class="nav__logo">...</router-link>
-  <div class="nav__tabs">
-    <!-- tabs ONLY — no auth elements here -->
-  </div>
-  <!-- auth as sibling, always visible, never scrolls -->
-  <router-link v-if="!isAuthenticated" to="/login" class="nav__auth font-label hover:text-white transition-colors duration-150 flex-shrink-0">
-    [ AUTHENTICATE ]
-  </router-link>
-  <span v-else class="nav__auth font-label text-fog select-none flex items-center gap-2 flex-shrink-0">
-    <span>{{ userProfileName }} ●</span>
-    <button class="text-[10px] text-neon-red hover:underline focus:outline-none" @click="handleLogout">[ OUT ]</button>
-  </span>
-</nav>
-```
+| # | What | Where |
+|---|------|-------|
+| 1 | `docker-compose.yml` typo `volumes:I` | `docker-compose.yml:57` |
+| 2 | Firebase service account volume mount crash when path empty — added `:-/dev/null` default | `docker-compose.yml:44` |
+| 3 | `.env` created with DB credentials, Firebase config, upload path | `.env` |
+| 4 | Analog photo upload 500 — Axios `Content-Type: multipart/form-data` stripped the boundary | `frontend/src/stores/analog.js` |
+| 5 | Digital photo upload same boundary bug | `frontend/src/stores/digital.js` |
+| 6 | Digital gallery create 500 — `YEAR_MONTH` is a MySQL 8 reserved word, queries now use backticks | `api/src/routes/digital.js` |
+| 7 | Digital gallery create Network Error — backtick inside template literal crashed nodemon | `api/src/routes/digital.js` |
+| 8 | Photo grid layout — mixed portrait/landscape heights, added `aspect-ratio: 3/2` + `object-fit: cover` | `frontend/src/styles/components.css`, `PhotoCard.vue` |
+| 9 | Lightbox not opening on click — `PhotoCard` div was missing `@click="$emit('click')"` | `frontend/src/components/PhotoCard.vue` |
+| 10 | Any approved user can now open/create a gallery for any month via picker | `frontend/src/views/digital/MonthlyTimeline.vue` |
+| 11 | Admin can create digital gallery for any past month | `frontend/src/views/admin/DigitalManager.vue` |
+| 12 | Google Photos import: append `=d` to baseUrl for full-res + EXIF download | `api/src/services/googlePhotos.js` |
+| 13 | Google Photos `creationTime` passed through and injected into `exif_json` as fallback | `api/src/services/googlePhotos.js`, `MonthlyGallery.vue` |
+| 14 | Digital gallery photos now sorted by EXIF `DateTimeOriginal` ASC (chronological) | `api/src/routes/digital.js` |
 
 ---
 
-### HIGH — Replace IBM Plex Mono as body font
+## Pending — Start Here Tomorrow
 
-**Problem:** `--font-body: 'IBM Plex Mono'` is on the impeccable reflex-fonts-to-reject list. It reads like a code editor, not a 1984 CRT terminal.
+### P1 — Google OAuth Client ID (BLOCKER for Google Photos import)
+`VITE_GOOGLE_CLIENT_ID` in `.env` is set to the project number `801008022261`.
+It needs the full OAuth Client ID from Google Cloud Console.
 
-**Recommended replacement:** `Martian Mono` (narrow, alien quality, fits "alternate 1984") or `Fragment Mono` (colder, more geometric).
-
-**Step 1 — `frontend/src/styles/tokens.css` line 42:**
-```css
-/* change from: */
---font-body: 'IBM Plex Mono', monospace;
-/* to: */
---font-body: 'Martian Mono', monospace;
-```
-
-**Step 2 — `frontend/index.html`:** Remove `IBM+Plex+Mono:wght@400;500;600` from the Google Fonts URL. Add `Martian+Mono:wght@400;500;600`.
+**Steps:**
+1. [console.cloud.google.com](https://console.cloud.google.com) → project `blog80s`
+2. APIs & Services → Credentials → OAuth 2.0 Client IDs → copy full Client ID
+3. On the same screen add `http://localhost:5173` to Authorized JavaScript Origins
+4. Update `.env`: `VITE_GOOGLE_CLIENT_ID=801008022261-xxxxxxxx.apps.googleusercontent.com`
+5. Restart Vite dev server (env vars require restart)
+6. Also verify Google Photos Library API is enabled: APIs & Services → Enabled APIs
 
 ---
 
-### MEDIUM — Grain SVG effect is invisible on dark backgrounds
+### P2 — User Role & Group System (design agreed, not yet implemented)
 
-**Problem:** `mix-blend-mode: overlay` at `opacity: 0.04` on near-black void is essentially invisible — overlay needs a lighter base to register.
+**Agreed design:**
 
-**File:** `frontend/src/styles/components.css` — the `.grain` rule added this session.
+| Role | Access |
+|------|--------|
+| `admin` | Everything + admin panel |
+| `family` | All analog + all digital galleries |
+| `friend` | Only analog galleries tagged with a matching group tag |
+| `user` | Legacy / pending (keep for backward compat) |
 
-```css
-.grain {
-  opacity: 0.05;
-  mix-blend-mode: screen;   /* was: overlay */
-}
-```
+New `group` VARCHAR(50) nullable column on `users`:
+- `null` → general friend (sees galleries tagged `friends`)
+- `asturias` → sees galleries tagged `friends` OR `asturias`
+- `berlin_a`, `berlin_b`, `berlin_c` → sees galleries tagged `friends` OR their group
+- Adding new groups = just add a new tag + assign users that group string
 
-Also add `display: block` to the SVG in `frontend/src/views/Home.vue` to prevent inline-element baseline gap:
-```html
-<svg class="grain select-none pointer-events-none" style="display:block">
-```
-
----
-
-### MEDIUM — `select-none` blocks text selection in hero
-
-**Problem:** `<header class="hero select-none ...">` — applied to whole header, so the readable `.hero__sub` paragraph can't be copied.
-
-**File:** `frontend/src/views/Home.vue` lines 12–22
-
-Remove `select-none` from `<header>`, add it only to the decorative kicker and heading:
-```html
-<header class="hero py-12 border-b border-gridColor">
-  <div class="max-w-[1440px] mx-auto px-6 md:px-12 hero__inner">
-    <div class="hero__kicker kicker mb-2 select-none">...</div>
-    <h1 class="... select-none">ENDER<span class="hero-ab">THOUGHTS</span></h1>
-    <p class="hero__sub ..."><!-- no select-none here --></p>
-  </div>
-</header>
-```
+**Files to change:**
+- New migration: `db/migrations/008_user_roles_and_groups.sql`
+  - `ALTER TABLE users MODIFY COLUMN role ENUM('admin','family','friend','user') DEFAULT 'user';`
+  - `ALTER TABLE users ADD COLUMN \`group\` VARCHAR(50) NULL DEFAULT NULL;`
+- `api/src/middleware/auth.js` — add `requireFamily`, update `requireApproved` to handle new roles
+- `api/src/routes/analog.js` — filter gallery list by user role + group vs gallery tags
+- `api/src/routes/digital.js` — restrict to `family` and `admin` only
+- `frontend/src/views/admin/UserManager.vue` — add role selector + group input fields
 
 ---
 
-### LOW — Hardcoded #00e0ff in hero chromatic aberration
+### P3 — Feed Admin Rework
 
-**File:** `frontend/src/views/Home.vue` (scoped style, bottom of file)
+**Current behaviour (broken UX):** Feed manager shows a flat browser of ALL photos from all analog galleries. Too noisy, not intentional.
 
-**Step 1 — Add token to `frontend/src/styles/tokens.css`:**
-```css
---neon-cyan: #00E0FF;
-```
+**Agreed new behaviour:**
+1. Admin visits a specific analog gallery in the admin panel (`/admin/analog/:id`)
+2. Each photo has a **"Push to Feed"** button — this promotes it as a feed candidate
+3. **Feed Manager** (`/admin/feed`) only shows photos already promoted — admin writes caption, assigns tags, toggles publish/unpublish
+4. Removing from feed = "Unpublish" or "Scrap" — reverts `is_public = FALSE`
+5. Public home feed unchanged
 
-**Step 2 — Update the scoped style in Home.vue:**
-```css
-.hero-ab:hover {
-  text-shadow: -1px 0 var(--neon-red), 1px 0 var(--neon-cyan);
-}
-```
-
-**Bonus:** Extend the effect to active nav tabs for consistency:
-```css
-/* in components.css .tab--active */
-.tab--active {
-  color: var(--phosphor);
-  text-shadow: -0.5px 0 var(--neon-red), 0.5px 0 var(--neon-cyan);
-}
-```
+**Files to change:**
+- `frontend/src/views/admin/AnalogGallery.vue` — add "Push to Feed" button per photo (calls existing publish endpoint or a new promote endpoint)
+- `frontend/src/views/admin/FeedManager.vue` — filter to only show `is_public = TRUE` OR photos in feed queue; remove the gallery browser
+- `api/src/routes/admin/feed.js` — review/confirm endpoints support this flow
 
 ---
 
-### LATER — Migrate colors from hex to OKLCH
-
-Low priority. The palette is coherent as-is. Do this when you need to adjust hues without losing perceived saturation. Approximate equivalents:
-```css
---phosphor: oklch(93% 0.28 156);
---amber:    oklch(82% 0.17 72);
---neon-red: oklch(62% 0.28 10);
---neon-cyan: oklch(85% 0.17 200);
---void:     oklch(8% 0.008 280);
---surface:  oklch(11% 0.008 280);
-```
-
----
-
-## Pre-existing Pending Fixes (from 2026-06-08)
+## Still Pending from Previous Sessions
 
 ### Functional Gaps
+| # | File | Gap |
+|---|------|-----|
+| 1 | `frontend/src/router/index.js` | Missing `/analog/:id/photo/:photoId` route — photos not URL-addressable |
+| 2 | `frontend/src/views/admin/FeedManager.vue` | No drag-and-drop reorder |
+| 3 | `api/src/routes/admin/feed.js` | URL mismatch with README: `PUT /api/admin/photos/reorder` vs actual `PUT /api/admin/feed/reorder/bulk` |
+| 4 | `frontend/src/views/Login.vue` | Dead email/password form — should be Google OAuth only |
 
-| # | File(s) | Gap |
-|---|---------|-----|
-| 1 | `frontend/src/router/index.js` | Missing `/analog/:id/photo/:photoId` route — photos not URL-addressable per README spec |
-| 2 | `frontend/src/router/index.js` | `views/analog/PhotoUpload.vue` has no registered route — unreachable dead code |
-| 3 | `frontend/src/views/digital/GooglePhotosImport.vue` | Orphaned stub. Real picker fetches Google API directly from frontend instead of proxying server-side |
-| 4 | `frontend/src/views/admin/FeedManager.vue` | Inline tag editing missing — only caption and sort_order editable; README requires "Edit caption and tags inline" |
-| 5 | `frontend/src/views/admin/FeedManager.vue` | No drag-and-drop reorder — DESIGN §6.7 requires drag-to-publish queue; only manual integer input exists |
-| 6 | `api/src/routes/admin/feed.js` + `frontend/src/stores/admin.js` | URL mismatch: README says `PUT /api/admin/photos/reorder`; route registered as `PUT /api/admin/feed/reorder/bulk` |
-
-### Design System Gaps
-
-| # | File(s) | Gap |
-|---|---------|-----|
-| 7 | `frontend/src/styles/tokens.css` | Light mode missing glow reductions — `--glow-*` should be at 30% opacity in light mode; only color tokens are overridden |
-| 8 | `frontend/src/views/Login.vue` | Dead email/password form renders and immediately errors — README specifies Google OAuth only |
-
-### Completed from 2026-06-08 list
-- ✅ Scanlines: `Home.vue` now adds `scanlines` class on mount
-- ✅ Nav bracket formatting: tabs now render `[ PUBLIC ]` `[ ANALOG ]` etc.
-- ✅ Emoji in AnalogManager: removed
-- ✅ Light mode glow tokens: partially addressed in tokens.css
-- ✅ `hover:aberration` → replaced with scoped `.hero-ab:hover` CSS
-
----
-
-## Other Known Pending Work
-
-- **Re-upload test photos:** Existing uploads at old quality settings need to be deleted and re-uploaded with the correct sharp.js settings (5000px max, quality 92, 4:4:4 chroma)
-- **Run migration 007 in production:** `db/migrations/007_add_gallery_published_and_in_gallery.sql` — adds `is_published` to `analog_galleries` and `in_gallery` to `photos`
+### Design Pending (from 2026-06-12 session)
+| # | What |
+|---|------|
+| A | Replace IBM Plex Mono with Martian Mono (`tokens.css` + `index.html`) |
+| B | Auth button scrolls off mobile nav — move out of `.nav__tabs` in `App.vue` |
+| C | Grain effect invisible — change `mix-blend-mode` from `overlay` to `screen` in `components.css` |
+| D | Hardcoded `#00e0ff` in Home.vue — move to `--neon-cyan` token |
 
 ---
 
 ## Key File Locations
 
 | What | Where |
-|---|---|
-| Design tokens | `frontend/src/styles/tokens.css` |
-| Global base CSS | `frontend/src/styles/base.css` |
-| Component CSS | `frontend/src/styles/components.css` |
-| Root app template | `frontend/src/App.vue` |
-| Home feed | `frontend/src/views/Home.vue` |
-| Analog gallery list (public) | `frontend/src/views/analog/GalleryList.vue` |
-| Analog gallery detail (public) | `frontend/src/views/analog/GalleryDetail.vue` |
-| Admin analog manager | `frontend/src/views/admin/AnalogManager.vue` |
-| Admin analog gallery | `frontend/src/views/admin/AnalogGallery.vue` |
-| Analog store | `frontend/src/stores/analog.js` |
-| Photos store | `frontend/src/stores/photos.js` |
-| Design context | `.impeccable.md` (project root) |
+|------|-------|
+| Environment config | `.env` (project root) |
 | DB migrations | `db/migrations/` |
+| API entry point | `api/src/index.js` |
+| Auth middleware | `api/src/middleware/auth.js` |
+| Analog routes | `api/src/routes/analog.js` |
+| Digital routes | `api/src/routes/digital.js` |
+| Feed admin routes | `api/src/routes/admin/feed.js` |
+| Sharp image processing | `api/src/services/sharp.js` |
+| Google Photos import | `api/src/services/googlePhotos.js` |
+| Design tokens | `frontend/src/styles/tokens.css` |
+| Component CSS | `frontend/src/styles/components.css` |
+| Admin feed manager | `frontend/src/views/admin/FeedManager.vue` |
+| Admin analog gallery | `frontend/src/views/admin/AnalogGallery.vue` |
+| Admin user manager | `frontend/src/views/admin/UserManager.vue` |
+| Digital timeline (public) | `frontend/src/views/digital/MonthlyTimeline.vue` |
+| Digital gallery (public) | `frontend/src/views/digital/MonthlyGallery.vue` |
+| Photo card component | `frontend/src/components/PhotoCard.vue` |
+| Lightbox component | `frontend/src/components/Lightbox.vue` |
+| Design context | `.impeccable.md` (project root) |

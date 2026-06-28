@@ -9,6 +9,47 @@
       </p>
     </header>
 
+    <!-- Create Gallery Form -->
+    <div class="border border-gridColor bg-surface p-5 space-y-4">
+      <h3 class="text-xs font-label text-dust uppercase select-none">// CREATE MONTHLY GALLERY</h3>
+      <form class="flex flex-wrap gap-3 items-end" @submit.prevent="createGallery">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-label text-dust uppercase">Year</label>
+          <input
+            v-model.number="form.year"
+            type="number"
+            min="2000"
+            :max="new Date().getFullYear()"
+            required
+            class="tinput w-24"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-label text-dust uppercase">Month</label>
+          <select v-model.number="form.month" required class="tinput w-36">
+            <option v-for="(name, idx) in monthNames" :key="idx" :value="idx + 1">
+              {{ String(idx + 1).padStart(2, '0') }} — {{ name }}
+            </option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-label text-dust uppercase">Display Name</label>
+          <input
+            v-model="form.displayName"
+            type="text"
+            maxlength="50"
+            required
+            class="tinput w-48"
+            placeholder="e.g. January 2025"
+          />
+        </div>
+        <button type="submit" class="btn btn--sm text-xs" :disabled="creating">
+          {{ creating ? '[ CREATING... ]' : '[ CREATE GALLERY ]' }}
+        </button>
+      </form>
+      <p v-if="createError" class="text-xs font-body text-neon-red">{{ createError }}</p>
+    </div>
+
     <!-- Digital timelines list -->
     <div v-if="loading" class="flex items-center justify-center py-20 font-body text-phosphor">
       SCANNING DATABASE SEGMENTS<span class="cursor">...</span>
@@ -76,16 +117,39 @@
 </template>
 
 <script>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useDigitalStore } from '@/stores/digital';
+
+const MONTH_NAMES = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December'
+];
 
 export default {
   name: 'AdminDigitalManager',
   setup() {
     const digitalStore = useDigitalStore();
+    const router = useRouter();
     const galleries = computed(() => digitalStore.galleries);
     const loading = computed(() => digitalStore.loading);
     const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace('/api', '');
+
+    const now = new Date();
+    const form = ref({
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      displayName: `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
+    });
+    const creating = ref(false);
+    const createError = ref('');
+
+    // Auto-update display name when year/month changes
+    watch([() => form.value.year, () => form.value.month], ([y, m]) => {
+      if (m >= 1 && m <= 12 && y >= 2000) {
+        form.value.displayName = `${MONTH_NAMES[m - 1]} ${y}`;
+      }
+    });
 
     onMounted(() => {
       digitalStore.fetchGalleries();
@@ -97,10 +161,36 @@ export default {
       return `${apiBase}/uploads/${url}`;
     };
 
+    const createGallery = async () => {
+      createError.value = '';
+      const yearMonth = `${form.value.year}-${String(form.value.month).padStart(2, '0')}`;
+      creating.value = true;
+      try {
+        const result = await digitalStore.createGallery({
+          year_month: yearMonth,
+          display_name: form.value.displayName
+        });
+        if (result.conflict) {
+          router.push(`/digital/${yearMonth}`);
+        } else {
+          router.push(`/digital/${result.year_month}`);
+        }
+      } catch (err) {
+        createError.value = err.response?.data?.error || err.message;
+      } finally {
+        creating.value = false;
+      }
+    };
+
     return {
       galleries,
       loading,
-      getThumbUrl
+      getThumbUrl,
+      form,
+      creating,
+      createError,
+      createGallery,
+      monthNames: MONTH_NAMES
     };
   }
 };

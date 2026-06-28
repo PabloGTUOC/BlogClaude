@@ -58,6 +58,7 @@ router.post('/firebase', async (req, res) => {
       firebase_uid: user.firebase_uid,
       email: user.email,
       role: user.role,
+      group: user.group || null,
       status: user.status
     };
 

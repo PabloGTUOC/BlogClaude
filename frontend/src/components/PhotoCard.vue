@@ -1,12 +1,12 @@
 <template>
-  <div class="pcard relative group select-none overflow-hidden border border-gridColor bg-surface cursor-pointer focus:outline-none focus:ring-1 focus:ring-phosphor" tabindex="0" @keydown.enter="$emit('click')">
+  <div class="pcard relative group select-none overflow-hidden border border-gridColor bg-surface cursor-pointer focus:outline-none focus:ring-1 focus:ring-phosphor" tabindex="0" @click="$emit('click')" @keydown.enter="$emit('click')">
     <!-- Format Badge (Top-Right) -->
     <span :class="['pcard__badge', photo.zone === 'digital' ? 'pcard__badge--digital' : '']">
       [{{ photo.zone === 'analog' ? '35mm' : 'DIGITAL' }}]
     </span>
 
     <!-- Thumbnail Image -->
-    <img class="pcard__img w-full h-auto object-cover" :src="thumbUrl" :alt="photo.caption || 'Photo'" loading="lazy" />
+    <img class="pcard__img w-full h-full object-cover absolute inset-0" :src="thumbUrl" :alt="photo.caption || 'Photo'" loading="lazy" />
 
     <!-- Caption Overlay on Hover -->
     <div class="pcard__cap flex flex-col justify-end bg-void/90 border-t border-gridColor p-3 absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]">

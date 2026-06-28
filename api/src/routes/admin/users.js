@@ -6,6 +6,8 @@ const { verifyJWT, requireAdmin } = require('../../middleware/auth');
 // Apply admin guard to all routes in this file
 router.use(verifyJWT, requireAdmin);
 
+const VALID_ROLES = ['admin', 'family', 'friend', 'user'];
+
 // GET /api/admin/users - List users by status (pending | approved | revoked)
 router.get('/', async (req, res) => {
   const { status } = req.query;
@@ -16,7 +18,7 @@ router.get('/', async (req, res) => {
 
   try {
     const queryStr = `
-      SELECT id, firebase_uid, email, name, avatar_url, role, status, created_at AS registered_at, approved_at, approved_by
+      SELECT id, firebase_uid, email, name, avatar_url, role, \`group\`, status, created_at AS registered_at, approved_at, approved_by
       FROM users
       WHERE status = ?
       ORDER BY created_at DESC
@@ -26,6 +28,36 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users', code: 'DATABASE_ERROR' });
+  }
+});
+
+// PUT /api/admin/users/:id/role - Update role and group
+router.put('/:id/role', async (req, res) => {
+  const targetUserId = parseInt(req.params.id, 10);
+  const { role, group } = req.body;
+
+  if (!role || !VALID_ROLES.includes(role)) {
+    return res.status(400).json({ error: 'Valid role required (admin|family|friend|user)', code: 'INVALID_INPUT' });
+  }
+
+  if (targetUserId === req.user.id) {
+    return res.status(400).json({ error: 'You cannot change your own role', code: 'SELF_MODIFICATION' });
+  }
+
+  try {
+    const result = await db.query(
+      'UPDATE users SET role = ?, `group` = ? WHERE id = ?',
+      [role, group || null, targetUserId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found', code: 'NOT_FOUND' });
+    }
+
+    res.json({ message: 'User role updated successfully' });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({ error: 'Failed to update user role', code: 'DATABASE_ERROR' });
   }
 });
 

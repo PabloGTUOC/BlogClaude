@@ -16,7 +16,7 @@
           ENDER<span class="hero-ab">THOUGHTS</span>
         </h1>
         <p class="hero__sub text-sm md:text-base font-body text-fog max-w-[68ch] leading-relaxed">
-          A transmission from a slightly alternate 1984 — where the network was wired a decade early and photography went digital while still feeling chemical. Retro-brutalist. CRT phosphor on wet-concrete black. <span class="cursor">_</span>
+          A transmission from a slightly alternate 1984 — where the network was wired a decade early and photography went digital while still feeling chemical. A place to share with family & friends our daily life trough images. <span class="cursor">_</span>
         </p>
       </div>
     </header>

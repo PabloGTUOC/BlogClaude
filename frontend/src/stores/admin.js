@@ -65,6 +65,16 @@ export const useAdminStore = defineStore('admin', {
         throw error;
       }
     },
+    async updateUserRole(userId, role, group) {
+      try {
+        await api.put(`/admin/users/${userId}/role`, { role, group: group || null });
+        await this.fetchUsers('approved');
+        await this.fetchUsers('pending');
+      } catch (error) {
+        console.error(`Failed to update role for user ${userId}:`, error);
+        throw error;
+      }
+    },
 
     // ---- Tags management ----
     async fetchTags() {
