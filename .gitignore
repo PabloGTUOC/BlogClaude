@@ -144,3 +144,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Google Photos test imports (added while testing the import flow — not real content)
+uploads/full/*IMG_*.jpg
+uploads/thumbs/*IMG_*.jpg
