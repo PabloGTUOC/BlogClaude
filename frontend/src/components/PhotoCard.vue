@@ -5,8 +5,16 @@
       [{{ photo.zone === 'analog' ? '35mm' : 'DIGITAL' }}]
     </span>
 
-    <!-- Thumbnail Image -->
+    <!-- Thumbnail Image (poster frame for videos) -->
     <img class="pcard__img w-full h-full object-cover absolute inset-0" :src="thumbUrl" :alt="photo.caption || 'Photo'" loading="lazy" />
+
+    <!-- Video play overlay -->
+    <div v-if="photo.media_type === 'video'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <span class="flex items-center justify-center w-12 h-12 rounded-full bg-void/70 border border-phosphor text-phosphor text-lg">▶</span>
+      <span v-if="photo.duration" class="absolute bottom-2 right-2 bg-void/80 text-chrome font-label text-[10px] px-1.5 py-0.5">
+        {{ formattedDuration }}
+      </span>
+    </div>
 
     <!-- Caption Overlay on Hover -->
     <div class="pcard__cap flex flex-col justify-end bg-void/90 border-t border-gridColor p-3 absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]">
@@ -47,9 +55,18 @@ export default {
       return `${apiBase}/uploads/${props.photo.filename}`;
     });
 
+    const formattedDuration = computed(() => {
+      const d = props.photo.duration;
+      if (!d && d !== 0) return '';
+      const m = Math.floor(d / 60);
+      const s = d % 60;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    });
+
     return {
       thumbUrl,
-      imageUrl
+      imageUrl,
+      formattedDuration
     };
   }
 };

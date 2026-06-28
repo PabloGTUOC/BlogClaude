@@ -30,6 +30,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       FIREBASE_SERVICE_ACCOUNT_PATH: /app/firebase-service-account.json
       UPLOAD_PATH: /app/uploads
+      # Google Photos Picker API (backend OAuth) — required for digital cloud imports
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      API_ORIGIN: ${API_ORIGIN}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
@@ -47,6 +52,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # VITE_* values are baked in at build time, so they must be passed as build args
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
     container_name: enderthoughts-frontend
     restart: unless-stopped
     ports:

@@ -53,6 +53,7 @@
         v-for="u in usersList"
         :key="u.id"
         :user="u"
+        :tags="tags"
         @approve="handleApprove"
         @revoke="handleRevoke"
         @restore="handleRestore"
@@ -78,6 +79,9 @@ export default {
 
     const loading = computed(() => adminStore.loading);
     const pendingCount = computed(() => adminStore.pendingCount);
+    // Friend groups are driven by the existing tag taxonomy so a friend's group
+    // can never drift from the gallery tag names used to grant access.
+    const tags = computed(() => adminStore.tags);
 
     const usersList = computed(() => {
       if (activeTab.value === 'pending') return adminStore.usersPending;
@@ -88,6 +92,7 @@ export default {
 
     onMounted(() => {
       switchTab('pending');
+      adminStore.fetchTags();
     });
 
     const switchTab = async (tab) => {
@@ -137,6 +142,7 @@ export default {
       activeTab,
       loading,
       pendingCount,
+      tags,
       usersList,
       switchTab,
       handleApprove,

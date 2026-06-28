@@ -49,13 +49,10 @@
         </select>
       </div>
       <div v-if="editRole === 'friend'" class="flex flex-col gap-1">
-        <label class="text-[10px] font-label text-dust uppercase">Group</label>
+        <label class="text-[10px] font-label text-dust uppercase">Group (= gallery tag)</label>
         <select v-model="editGroup" class="tinput w-36">
-          <option value="">general</option>
-          <option value="asturias">asturias</option>
-          <option value="berlin_a">berlin_a</option>
-          <option value="berlin_b">berlin_b</option>
-          <option value="berlin_c">berlin_c</option>
+          <option value="">— no group (sees nothing) —</option>
+          <option v-for="t in tags" :key="t.id" :value="t.name">{{ t.name }}</option>
         </select>
       </div>
       <button class="btn btn--sm text-xs" :disabled="saving" @click="saveRole">
@@ -72,7 +69,8 @@ import { computed, ref, watch } from 'vue';
 export default {
   name: 'UserRow',
   props: {
-    user: { type: Object, required: true }
+    user: { type: Object, required: true },
+    tags: { type: Array, default: () => [] }
   },
   emits: ['approve', 'revoke', 'restore', 'role-updated'],
   setup(props, { emit }) {

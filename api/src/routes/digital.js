@@ -7,7 +7,8 @@ const db = require('../db');
 const { verifyJWT, requireApproved, requireFamily } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { processUpload } = require('../services/sharp');
-const { importGooglePhoto } = require('../services/googlePhotos');
+const { processVideo } = require('../services/video');
+const { importGooglePhoto, importGoogleVideo } = require('../services/googlePhotos');
 
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads');
 
@@ -193,6 +194,7 @@ router.get('/google-photos/poll/:sessionId', verifyJWT, async (req, res) => {
           }
           return {
             id: item.id,
+            type: item.type || 'PHOTO', // 'PHOTO' | 'VIDEO'
             baseUrl,
             thumbnailDataUrl,
             filename: item.mediaFile?.filename || 'photo.jpg',
@@ -354,17 +356,22 @@ router.post('/galleries/:id/photos', async (req, res) => {
       const results = [];
       try {
         for (const file of req.files) {
-          const processed = await processUpload(file.buffer, file.originalname);
+          const isVideo = file.mimetype.startsWith('video/');
+          const processed = isVideo
+            ? await processVideo(file.buffer, file.originalname)
+            : await processUpload(file.buffer, file.originalname);
 
           const [insertResult] = await db.pool.query(
-            `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, exif_json, uploaded_by, source) 
-             VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, 'direct')`,
+            `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, duration, media_type, exif_json, uploaded_by, source)
+             VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'direct')`,
             [
               galleryId,
               processed.filename,
               processed.thumbnail,
               processed.width,
               processed.height,
+              processed.duration,
+              processed.media_type,
               processed.exif_json,
               req.user.id
             ]
@@ -409,17 +416,22 @@ router.post('/galleries/:id/photos', async (req, res) => {
     const results = [];
     try {
       for (const item of googlePhotos) {
-        const processed = await importGooglePhoto(item.baseUrl, item.filename, item.creationTime, accessToken);
+        const isVideo = item.type === 'VIDEO';
+        const processed = isVideo
+          ? await importGoogleVideo(item.baseUrl, item.filename, accessToken)
+          : await importGooglePhoto(item.baseUrl, item.filename, item.creationTime, accessToken);
 
         const [insertResult] = await db.pool.query(
-          `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, exif_json, uploaded_by, source, google_photos_id) 
-           VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, 'google_photos', ?)`,
+          `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, duration, media_type, exif_json, uploaded_by, source, google_photos_id)
+           VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google_photos', ?)`,
           [
             galleryId,
             processed.filename,
             processed.thumbnail,
             processed.width,
             processed.height,
+            processed.duration,
+            processed.media_type,
             processed.exif_json,
             req.user.id,
             item.id || null

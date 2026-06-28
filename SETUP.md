@@ -6,114 +6,210 @@ This manual describes how to initialize, configure, and boot the **enderthoughts
 
 ## 1. Firebase Authentication Setup
 
-Enderthoughts uses Firebase Authentication for secure Google OAuth sign-in.
+Enderthoughts uses Firebase Authentication for secure Google OAuth sign-in (this is the *app login*, separate from the Google Photos import OAuth in section 2).
 
 ### 1.1 Web App Client Keys
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Create a new project called `enderthoughts`.
+2. Create a new project (e.g. `enderthoughts`).
 3. In the project dashboard, click the **Web icon** (`</>`) to add a Web App.
 4. Name the app `enderthoughts-client`.
-5. Copy the `firebaseConfig` object keys from the setup screen. You will place these into your `.env`:
+5. Copy the `firebaseConfig` keys into your `.env`:
    - `apiKey` &rarr; `VITE_FIREBASE_API_KEY`
    - `authDomain` &rarr; `VITE_FIREBASE_AUTH_DOMAIN`
    - `projectId` &rarr; `VITE_FIREBASE_PROJECT_ID`
    - `appId` &rarr; `VITE_FIREBASE_APP_ID`
-6. In the left sidebar under Build, click **Authentication** and enable **Google** sign-in provider. Add `localhost` and your production domain `blog.enderthoughts.com` to Authorized Domains.
+6. Under Build &rarr; **Authentication**, enable the **Google** sign-in provider. Add `localhost` and your production domain (e.g. `blog.enderthoughts.com`) to **Authorized Domains**.
 
 ### 1.2 Service Account Credentials (API Server)
-1. In the Firebase Console, click the **Settings Gear** next to "Project Overview" and choose **Project settings**.
-2. Navigate to the **Service accounts** tab.
-3. Click **Generate new private key**.
-4. Save the downloaded JSON file to a secure directory (e.g., `/Users/pablogtorres/Desktop/Projects/BlogClaude/firebase-service-account.json`).
-5. Update `FIREBASE_SERVICE_ACCOUNT_PATH` in your `.env` to point to this file path.
+1. In the Firebase Console, open **Project settings** (gear icon) &rarr; **Service accounts**.
+2. Click **Generate new private key** and save the downloaded JSON somewhere safe.
+3. Point `FIREBASE_SERVICE_ACCOUNT_PATH` in your `.env` at that file.
+
+> The repo's `.gitignore` ignores `*-firebase-adminsdk-*.json`, so the downloaded key will not be committed.
 
 ---
 
 ## 2. Google Photos Picker API Setup
 
-To enable digital timeline cloud imports:
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Select your Firebase project from the dropdown.
-3. Search for and enable the **Photos Picker API** (and/or **Google Photos Library API**).
-4. Go to **APIs & Services &gt; Credentials**.
-5. Locate the **OAuth 2.0 Client IDs** automatically created by Firebase.
-6. Click edit and copy the **Client ID**.
-7. Update `VITE_GOOGLE_CLIENT_ID` in your `.env`.
+The digital galleries import photos/videos via the **Google Photos Picker API**
+(`photospicker.googleapis.com`). The older Photos *Library* API is **deprecated for
+new projects** and is not used.
+
+The flow is server-driven: the app opens an OAuth popup &rarr; the backend exchanges the
+code for a token &rarr; the backend creates a Picker session &rarr; the user selects media in
+Google's own picker &rarr; the backend downloads the selected items.
+
+### 2.1 Enable the API
+1. Open the [Google Cloud Console](https://console.cloud.google.com/) and select your Firebase project.
+2. In **APIs & Services &gt; Library**, search for **Photos Picker API** and **Enable** it.
+
+### 2.2 OAuth Client ID + Secret
+1. Go to **APIs & Services &gt; Credentials**.
+2. Open the **OAuth 2.0 Client ID** (Firebase usually creates a "Web client" automatically).
+3. Copy the **Client ID** &rarr; `VITE_GOOGLE_CLIENT_ID`.
+4. Copy the **Client secret** &rarr; `GOOGLE_CLIENT_SECRET` (used server-side for the token exchange).
+
+### 2.3 Register the Redirect URI ⚠️
+Under the same OAuth client, add this **exact** value to **Authorized redirect URIs**:
+
+```
+<API_ORIGIN>/api/digital/google-photos/callback
+```
+
+- Local dev: `http://localhost:3000/api/digital/google-photos/callback`
+- Production: `https://api.enderthoughts.com/api/digital/google-photos/callback`
+
+`API_ORIGIN` must match this host in your `.env`. A mismatch causes `redirect_uri_mismatch`.
+
+### 2.4 OAuth Consent Screen Scope
+On the **OAuth consent screen**, add the scope:
+
+```
+https://www.googleapis.com/auth/photospicker.mediaitems.readonly
+```
 
 ---
 
 ## 3. Environment Variables Configuration
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root and fill in every value:
 ```bash
 cp .env.example .env
 ```
-Fill out all credentials. In local dev, you can leave Firebase keys empty to run in **Mock Auth Mode**.
+
+Key additions beyond the obvious DB/Firebase values:
+
+| Variable | Purpose |
+|---|---|
+| `GOOGLE_CLIENT_SECRET` | Server-side OAuth token exchange for Google Photos |
+| `API_ORIGIN` | Public base URL of the API; builds the OAuth redirect URI |
+| `FRONTEND_ORIGIN` | Public base URL of the frontend (origin checks) |
+| `VITE_GOOGLE_CLIENT_ID` | OAuth client ID (used by **both** frontend and backend) |
+| `UPLOAD_PATH` | Host directory for processed media (`full/`, `thumbs/`) |
+
+`VITE_*` values are compiled **into** the frontend bundle at build time. In local dev they
+are read from `.env` by Vite; in Docker they are passed as build args (handled automatically
+by `docker-compose.yml` / `deploy.sh`).
 
 ---
 
-## 4. Initial Bootstrap (Local Dev)
+## 4. Media Pipeline & Video Support
 
-You can run the stack locally for development using node processes:
+- **Images** are processed with `sharp` (resized full + thumbnail, EXIF extracted).
+- **Videos** are stored as-is; a poster-frame thumbnail and duration/dimensions are produced
+  with **ffmpeg**, provided by the bundled `ffmpeg-static` / `ffprobe-static` npm packages —
+  **no system ffmpeg install is required**. The binaries download during `npm install`
+  (so the Docker build needs internet access).
+- Uploads accept `image/*` and `video/*`, up to **200&nbsp;MB** per file (multer limit).
+- Both direct uploads and Google Photos imports support photos and videos.
 
-### 4.1 Run MySQL Database
-Start a local MySQL server instance (or run the compose `db` service only):
+> If you place the app behind a reverse proxy (e.g. nginx) in production, raise its
+> `client_max_body_size` to at least `200m` so large video uploads aren't rejected.
+
+---
+
+## 5. Initial Bootstrap (Local Dev)
+
+### 5.1 Run MySQL
 ```bash
 docker compose up -d db
 ```
 
-### 4.2 Start API Server
+### 5.2 Start API Server
 ```bash
 cd api
 npm install
 npm run dev
 ```
-On boot, the server will detect and automatically execute all SQL migration files in `db/migrations/` to initialize tables.
+On boot the server auto-runs every SQL file in `db/migrations/` to create/upgrade tables.
 
-### 4.3 Start Frontend Vue App
+### 5.3 Start Frontend (Vue + Vite)
 ```bash
 cd ../frontend
 npm install
 npm run dev
 ```
-Visit the local server address shown in the terminal.
+Visit the local address shown in the terminal. Make sure `FRONTEND_ORIGIN` / `API_ORIGIN`
+in `.env` match the ports you actually use.
 
 ---
 
-## 5. Setting up the First Admin User
+## 6. Setting up the First Admin User
 
-There is no self-registration path to the Admin role. You must promote your user directly in MySQL:
+There is no self-registration path to Admin. Promote your user directly in MySQL:
 
-1. Connect to your MySQL database:
+1. Connect:
    ```bash
    docker exec -it enderthoughts-db mysql -u root -p enderthoughts
    ```
-2. Retrieve your user registration (after signing in for the first time as pending):
+2. Find your user (after signing in once as a pending user):
    ```sql
    SELECT id, email, role, status FROM users;
    ```
-3. Set your role to `'admin'` and status to `'approved'`:
+3. Promote it:
    ```sql
    UPDATE users SET role='admin', status='approved' WHERE email='your-google-account@gmail.com';
    ```
 
-*(Alternatively, you can run this INSERT statement pre-emptively if you already know your Google Firebase UID)*:
-```sql
-INSERT INTO users (firebase_uid, email, name, role, status) 
-VALUES ('YOUR_FIREBASE_UID_HERE', 'pablo@enderthoughts.com', 'PABLO', 'admin', 'approved');
-```
+---
+
+## 7. Roles, Groups & Friend Access
+
+Access is governed by three independent levers:
+
+| Lever | Where set | Meaning |
+|---|---|---|
+| **role** | per user: `admin` / `family` / `friend` / `user` | Which tier the user is in |
+| **group** | per user (a tag name, e.g. `berlin`) | Which friend circle they belong to |
+| **gallery tags** | per analog gallery (e.g. `berlin`, `friends`) | Which circles may view that gallery |
+
+**Tier rules:**
+- **admin** — sees everything, including unpublished galleries; manages users & content.
+- **family** — all *published* analog galleries **and** the full digital side.
+- **friend** — **only** published analog galleries tagged with **their own group**. No digital access.
+- **user** (legacy) — treated like family for analog viewing; no digital access.
+
+**Friend access rule (analog):** a friend sees a published gallery **only if it carries a tag
+matching their `group`**. The `friends` tag alone does **not** grant access — it's just a label.
+A friend with **no group** assigned sees nothing.
+
+**Admin workflow:**
+1. Create the group/tag names (Admin &rarr; **Tag Manager**, or by tagging a gallery in
+   **Analog Manager** — tags are global).
+2. Assign a friend's group: Admin &rarr; **Users** &rarr; *Approved Directory* &rarr; `[ SET ROLE ]`
+   &rarr; choose `friend` &rarr; pick **Group** (the dropdown is populated from existing tags) &rarr; Save.
+3. Tag each analog gallery with the matching group name (e.g. `berlin`) and **publish** it.
+
+> Each friend belongs to a single group. Multi-circle friends would require a `user_groups`
+> junction table (not yet implemented).
 
 ---
 
-## 6. Docker Compose Deployment (Production)
+## 8. Docker Compose Deployment (Production)
 
-To compile and launch the production containers targeted for target platform x86_64:
+Prerequisites: Docker + Docker Compose installed, a fully filled `.env`, and the Firebase
+service-account JSON present at `FIREBASE_SERVICE_ACCOUNT_PATH`.
 
 ```bash
 ./deploy.sh
 ```
-This compile utility:
-- Builds images target platform `linux/amd64`
-- Runs `docker compose down` to clear old contexts
-- Launches `docker compose up -d`
-- Automatically mounts the host upload directory to keep processing output folders persistent.
+
+`deploy.sh`:
+- Validates that `.env` exists and required variables are set.
+- Ensures the host `UPLOAD_PATH` (with `full/`, `thumbs/`) exists.
+- Builds the API and frontend images for **linux/amd64** (pinned in the Dockerfiles), passing
+  `VITE_*` values as build args so they're baked into the frontend bundle.
+- Runs `docker compose down` then `docker compose up -d`.
+- DB migrations run automatically on API boot.
+
+Default published ports:
+
+| Service | Port |
+|---|---|
+| frontend (nginx) | `8080` |
+| api | `3000` |
+| db (mysql) | `3306` |
+
+> For production, remember to set `API_ORIGIN` to your real API host and register the matching
+> `…/api/digital/google-photos/callback` redirect URI in Google Cloud Console (section 2.3).
+> Tail logs with `docker compose logs -f api`.

@@ -1,18 +1,25 @@
 const { processUpload } = require('./sharp');
+const { processVideo } = require('./video');
 
-async function importGooglePhoto(baseUrl, originalName, creationTime, accessToken) {
-  // Append =d to get the original full-resolution file with EXIF metadata intact
-  const downloadUrl = baseUrl.endsWith('=d') ? baseUrl : `${baseUrl}=d`;
+// Downloads the raw bytes of a Google Photos Picker media item.
+// Photos use the `=d` suffix (full-res original); videos use `=dv` (download video).
+async function fetchGoogleMediaBuffer(baseUrl, accessToken, isVideo) {
+  const suffix = isVideo ? '=dv' : '=d';
+  const downloadUrl = baseUrl.endsWith(suffix) ? baseUrl : `${baseUrl}${suffix}`;
 
   // Picker API baseUrls require Authorization — Library API baseUrls are self-signed and don't
   const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
   const response = await fetch(downloadUrl, { headers });
   if (!response.ok) {
-    throw new Error(`Failed to fetch image from Google Photos: ${response.statusText}`);
+    throw new Error(`Failed to fetch ${isVideo ? 'video' : 'image'} from Google Photos: ${response.statusText}`);
   }
 
   const arrayBuffer = await response.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  return Buffer.from(arrayBuffer);
+}
+
+async function importGooglePhoto(baseUrl, originalName, creationTime, accessToken) {
+  const buffer = await fetchGoogleMediaBuffer(baseUrl, accessToken, false);
 
   const result = await processUpload(buffer, originalName || 'google_photo.jpg');
 
@@ -26,6 +33,12 @@ async function importGooglePhoto(baseUrl, originalName, creationTime, accessToke
   return result;
 }
 
+async function importGoogleVideo(baseUrl, originalName, accessToken) {
+  const buffer = await fetchGoogleMediaBuffer(baseUrl, accessToken, true);
+  return processVideo(buffer, originalName || 'google_video.mp4');
+}
+
 module.exports = {
-  importGooglePhoto
+  importGooglePhoto,
+  importGoogleVideo
 };

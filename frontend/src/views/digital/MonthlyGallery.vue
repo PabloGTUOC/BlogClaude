@@ -57,9 +57,9 @@
           <div v-for="photo in photos" :key="photo.id" class="relative group">
             <PhotoCard :photo="photo" @click="openPhotoLightbox(photo)" />
             
-            <!-- Admin delete action overlay -->
-            <button 
-              v-if="isAdmin" 
+            <!-- Delete overlay: admins can scrap anything, users can scrap their own uploads -->
+            <button
+              v-if="isAdmin || photo.uploaded_by === currentUserId"
               class="absolute top-2 left-2 z-20 btn btn--danger btn--sm text-[9px] py-1 px-2 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
               @click.stop="confirmDeletePhoto(photo.id)"
             >
@@ -101,6 +101,10 @@
               @click="toggleGoogleSelect(item)"
             >
               <img :src="item.thumbnailDataUrl || item.baseUrl" class="w-full h-full object-cover" alt="cloud photo" />
+              <!-- Video indicator -->
+              <div v-if="item.type === 'VIDEO'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span class="text-white text-2xl drop-shadow-[0_0_3px_#000]">▶</span>
+              </div>
               <!-- Selection indicator -->
               <div v-if="selectedGoogleIds.includes(item.id)" class="absolute top-1 right-1 bg-phosphor text-void font-label text-[9px] px-1 font-bold">
                 SEL
@@ -179,6 +183,7 @@ export default {
     const gallery = computed(() => digitalStore.currentGallery);
     const photos = computed(() => digitalStore.currentPhotos);
     const isAdmin = computed(() => authStore.isAdmin);
+    const currentUserId = computed(() => authStore.userId);
 
     const selectedGoogleIds = computed(() => selectedGooglePhotos.value.map(p => p.id));
 
@@ -299,6 +304,7 @@ export default {
         // Build items payload (backend will download the images using baseUrls)
         const payload = selectedGooglePhotos.value.map(item => ({
           id: item.id,
+          type: item.type || 'PHOTO',
           baseUrl: item.baseUrl,
           filename: item.filename || 'google_photos_import.jpg',
           creationTime: item.creationTime || null
@@ -341,6 +347,7 @@ export default {
       error,
       showUploadZone,
       isAdmin,
+      currentUserId,
       selectedPhoto,
       lightboxOpen,
       showGooglePicker,

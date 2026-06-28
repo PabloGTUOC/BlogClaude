@@ -3,9 +3,17 @@
     <!-- Close button (top right) -->
     <button class="btn btn--ghost lightbox__close select-none" @click="close">[ ESC ]</button>
 
-    <!-- Centered Full-res Image -->
+    <!-- Centered Full-res Media -->
     <div class="flex flex-col items-center justify-center max-w-[85vw] max-h-[85vh]">
-      <img class="lightbox__img max-h-[60vh] object-contain border border-gridColor" :src="imageUrl" :alt="photo?.caption || 'Photo'" />
+      <video
+        v-if="isVideo"
+        class="lightbox__img max-h-[60vh] object-contain border border-gridColor bg-black"
+        :src="imageUrl"
+        controls
+        autoplay
+        playsinline
+      ></video>
+      <img v-else class="lightbox__img max-h-[60vh] object-contain border border-gridColor" :src="imageUrl" :alt="photo?.caption || 'Photo'" />
       
       <!-- Metadata panel directly underneath -->
       <div class="lightbox__panel mt-4 w-full text-left">
@@ -66,6 +74,8 @@ export default {
   emits: ['close', 'prev', 'next'],
   setup(props, { emit }) {
     const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace('/api', '');
+
+    const isVideo = computed(() => props.photo?.media_type === 'video');
 
     const imageUrl = computed(() => {
       if (!props.photo) return '';
@@ -161,6 +171,7 @@ export default {
     });
 
     return {
+      isVideo,
       imageUrl,
       fileName,
       tags,

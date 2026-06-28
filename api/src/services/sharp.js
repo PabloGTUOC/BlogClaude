@@ -76,6 +76,8 @@ async function processUpload(fileBuffer, originalName) {
     thumbnail: `thumbs/${filenameBase}`,
     width: fullInfo.width,
     height: fullInfo.height,
+    duration: null,
+    media_type: 'image',
     exif_json: exif ? JSON.stringify(exif) : null
   };
 }

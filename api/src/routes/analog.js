@@ -43,19 +43,23 @@ router.get('/galleries', verifyJWT, requireApproved, async (req, res) => {
       // Admins see everything including unpublished
       whereClause = '';
     } else if (isFriend) {
-      // Friends see published galleries tagged 'friends' OR their specific group
-      const allowedTags = ['friends'];
-      if (userGroup) allowedTags.push(userGroup);
-      const placeholders = allowedTags.map(() => '?').join(', ');
-      whereClause = `
-        WHERE ag.is_published = 1
-          AND EXISTS (
-            SELECT 1 FROM analog_gallery_tags agt
-            JOIN tags t ON t.id = agt.tag_id
-            WHERE agt.gallery_id = ag.id AND t.name IN (${placeholders})
-          )
-      `;
-      params = allowedTags;
+      // Friends only see published galleries tagged with their OWN group (e.g. 'berlin').
+      // The 'friends' tag alone does NOT grant access — the group tag is required.
+      if (!userGroup) {
+        // Friend with no group assigned sees nothing
+        whereClause = 'WHERE 1 = 0';
+        params = [];
+      } else {
+        whereClause = `
+          WHERE ag.is_published = 1
+            AND EXISTS (
+              SELECT 1 FROM analog_gallery_tags agt
+              JOIN tags t ON t.id = agt.tag_id
+              WHERE agt.gallery_id = ag.id AND t.name = ?
+            )
+        `;
+        params = [userGroup];
+      }
     } else {
       // Family and legacy 'user' role: all published galleries
       whereClause = 'WHERE ag.is_published = 1';
@@ -104,18 +108,23 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
     let accessParams = [galleryId];
 
     if (isFriend) {
-      const allowedTags = ['friends'];
-      if (userGroup) allowedTags.push(userGroup);
-      const placeholders = allowedTags.map(() => '?').join(', ');
-      accessClause = `
-        AND ag.is_published = 1
-        AND EXISTS (
-          SELECT 1 FROM analog_gallery_tags agt
-          JOIN tags t ON t.id = agt.tag_id
-          WHERE agt.gallery_id = ag.id AND t.name IN (${placeholders})
-        )
-      `;
-      accessParams = [galleryId, ...allowedTags];
+      // Friends only see a gallery tagged with their OWN group (e.g. 'berlin').
+      // The 'friends' tag alone does NOT grant access — the group tag is required.
+      if (!userGroup) {
+        // Friend with no group assigned sees nothing
+        accessClause = 'AND 1 = 0';
+        accessParams = [galleryId];
+      } else {
+        accessClause = `
+          AND ag.is_published = 1
+          AND EXISTS (
+            SELECT 1 FROM analog_gallery_tags agt
+            JOIN tags t ON t.id = agt.tag_id
+            WHERE agt.gallery_id = ag.id AND t.name = ?
+          )
+        `;
+        accessParams = [galleryId, userGroup];
+      }
     } else if (!isAdmin) {
       accessClause = 'AND ag.is_published = 1';
     }

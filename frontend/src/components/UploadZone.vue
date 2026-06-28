@@ -13,7 +13,7 @@
         ref="fileInput"
         class="hidden"
         multiple
-        accept="image/*"
+        accept="image/*,video/*"
         @change="onFileSelected"
       />
 
@@ -22,7 +22,7 @@
       </div>
 
       <div v-if="files.length > 0" class="text-xs font-body text-fog max-w-md select-none mt-2">
-        STAGED: {{ files.length }} IMAGES [ {{ stagedFilesNames }} ]
+        STAGED: {{ files.length }} FILES [ {{ stagedFilesNames }} ]
       </div>
       <div v-else class="text-xs font-body text-dust select-none mt-1">
         DRAG FILES HERE OR CLICK TO BROWSE LOCAL STORAGE
