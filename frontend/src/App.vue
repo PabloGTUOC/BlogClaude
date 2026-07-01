@@ -35,7 +35,7 @@
         </router-link>
         <span v-else class="nav__auth font-label text-fog select-none flex items-center gap-2">
           <span>{{ userProfileName }} ●</span>
-          <button class="text-[10px] text-neon-red hover:underline focus:outline-none" @click="handleLogout">
+          <button class="text-xs text-neon-red hover:underline focus:outline-none" @click="handleLogout">
             [ OUT ]
           </button>
         </span>
@@ -53,6 +53,9 @@
 
     <!-- Global bottom status bar -->
     <StatusBar />
+
+    <!-- Global toasts + confirm dialog (replaces native alert/confirm) -->
+    <GlobalNotifications />
   </div>
 </template>
 
@@ -61,11 +64,13 @@ import { computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import StatusBar from '@/components/StatusBar.vue';
+import GlobalNotifications from '@/components/GlobalNotifications.vue';
 
 export default {
   name: 'App',
   components: {
-    StatusBar
+    StatusBar,
+    GlobalNotifications
   },
   setup() {
     const authStore = useAuthStore();

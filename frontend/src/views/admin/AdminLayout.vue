@@ -3,7 +3,7 @@
     <!-- Admin Sidebar Nav -->
     <aside class="w-full md:w-[240px] bg-surface border-b md:border-b-0 md:border-r border-gridColor select-none flex-shrink-0">
       <div class="p-4 md:p-6 border-b border-gridColor">
-        <div class="kicker text-[10px] mb-1">// SECURITY CONTROL //</div>
+        <div class="kicker text-xs mb-1">// SECURITY CONTROL //</div>
         <h3 class="text-white font-ui text-sm font-bold tracking-wide uppercase">ADMIN TERMINAL</h3>
       </div>
       
@@ -46,7 +46,7 @@
           active-class="border-phosphor bg-panel text-white text-shadow-phosphor"
         >
           <span>User Approvals</span>
-          <span v-if="pendingCount > 0" class="ml-2 bg-neon-red text-void font-ui font-bold text-[10px] px-1.5 py-0.5 rounded-sm animate-pulse">
+          <span v-if="pendingCount > 0" class="ml-2 bg-neon-red text-void font-ui font-bold text-xs px-1.5 py-0.5 rounded-sm animate-pulse">
             {{ pendingCount }}
           </span>
         </router-link>

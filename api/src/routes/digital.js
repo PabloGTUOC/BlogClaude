@@ -278,7 +278,10 @@ router.get('/galleries/:idOrYearMonth', async (req, res) => {
     const gallery = galleryRows[0];
 
     const photosQuery = `
-      SELECT p.*, u.name AS uploader_name, u.avatar_url AS uploader_avatar
+      SELECT p.*, u.name AS uploader_name, u.avatar_url AS uploader_avatar,
+             (SELECT COUNT(*) FROM photo_likes pl WHERE pl.photo_id = p.id) AS like_count,
+             (SELECT COUNT(*) FROM photo_comments pc WHERE pc.photo_id = p.id) AS comment_count,
+             EXISTS(SELECT 1 FROM photo_likes pl WHERE pl.photo_id = p.id AND pl.user_id = ?) AS liked_by_me
       FROM photos p
       LEFT JOIN users u ON p.uploaded_by = u.id
       WHERE p.digital_gallery_id = ?
@@ -287,7 +290,7 @@ router.get('/galleries/:idOrYearMonth', async (req, res) => {
         p.created_at
       ) ASC
     `;
-    const photos = await db.query(photosQuery, [gallery.id]);
+    const photos = await db.query(photosQuery, [req.user.id, gallery.id]);
 
     res.json({
       gallery,
@@ -411,7 +414,8 @@ router.post('/galleries/:id/photos', async (req, res) => {
     if (!accessToken) {
       return res.status(400).json({ error: 'Import session expired or missing. Please re-import from Google Photos.', code: 'IMPORT_SESSION_EXPIRED' });
     }
-    importSessions.delete(importSessionId);
+    // Keep the session until the import succeeds so a failed import can be retried
+    // with the same token (it's cleaned up on success, or by its 30-min TTL otherwise).
 
     const results = [];
     try {
@@ -453,6 +457,7 @@ router.post('/galleries/:id/photos', async (req, res) => {
         });
       }
 
+      importSessions.delete(importSessionId);
       res.status(201).json(results);
     } catch (importErr) {
       console.error('Google Photos Import failed:', importErr);

@@ -1,5 +1,5 @@
 # ENDERTHOUGHTS — DESIGN SYSTEM
-### `// RETRO-BRUTALIST 80s // TRANSMISSION SPEC v1.0`
+### `// RETRO-BRUTALIST 80s // TRANSMISSION SPEC v1.1`
 
 ---
 
@@ -24,10 +24,12 @@ Dark mode is the **canonical** mode. Light mode is a secondary inversion (see §
 | **PHOSPHOR** | `#00FF94` | `--phosphor` | Primary accent. CRT terminal green. Use sparingly. |
 | **AMBER** | `#FFB347` | `--amber` | Secondary accent. Analog warmth, digital-zone marker, VHS overlay. |
 | **NEON-RED** | `#FF2D55` | `--neon-red` | Danger, error, admin zone, selected-state pop. |
-| **DUST** | `#4A4A6A` | `--dust` | Muted foreground, secondary text, disabled. |
-| **FOG** | `#8A8AAA` | `--fog` | Tertiary text, placeholders, captions. |
+| **DUST** | `#4A4A6A` | `--dust` | Borders, disabled controls, decorative glyphs, inactive nav/tab labels. ~2.3:1 on VOID — **never use as readable body text.** |
+| **FOG** | `#8A8AAA` | `--fog` | Readable secondary text: metadata, field labels, table headers, captions, placeholders. ~5.9:1 on VOID. |
 | **CHROME** | `#C8C8E8` | `--chrome` | Primary body text. Blue-white monitor calibration. |
 | **WHITE** | `#F0F0FF` | `--white` | Headings, emphasis, max contrast. |
+
+**Contrast rule:** readable text is **CHROME or FOG**. `--dust` is for non-text roles (borders, disabled, decorative) plus the deliberate inactive-tab muting; the personal-app accessibility bar (see PRODUCT.md) accepts that tradeoff for inactive nav only, never for content.
 
 ### 1.2 Semantic Aliases
 
@@ -115,7 +117,9 @@ Accents keep their hue; only lightness shifts to preserve contrast. Glows are re
 | `ui-sm` | Orbitron | 12 / 1 | 400 | 0.1em | UPPER | Status bar, micro-labels |
 | `ui-badge` | Orbitron | 11 / 1 | 500 | 0.1em | UPPER | Role badges, status dots |
 
-Mobile down-scales `display-*` by ~30% (e.g. hero 72→48). Body text never below 13px; EXIF never below 12px.
+Mobile down-scales `display-*` by ~30% (e.g. hero 72→48).
+
+**Legibility floor:** no readable text below **12px**. Body never below 13px; EXIF / metadata / field labels / table headers never below 12px. Sizes of **10–11px are reserved for badges and corner glyphs only** (role badges, format pills, the `G`/`F` frame markers). Nav tabs render at **13px** Share Tech Mono (the `ui-md` 14px spec is the ceiling; 13px is used to keep the nav row from overflowing on small laptops); status bar at 12px.
 
 ### 2.3 Glow Discipline
 
@@ -235,6 +239,7 @@ RGB-split on hero title only, on hover or boot:
 - **Left:** logo lockup `ENDERTHOUGHTS // SYSTEM` — `ENDERTHOUGHTS` in Orbitron 500 WHITE, `// SYSTEM` in Share Tech Mono DUST.
 - **Right:** mode selectors `[PUBLIC] [ANALOG] [DIGITAL]` + `[AUTH STATUS]`.
 - **Tabs (terminal mode selectors):**
+  - type: Share Tech Mono **13px**, `0.1em` tracking, UPPERCASE.
   - default: DUST text, no underline.
   - hover: CHROME text.
   - active: PHOSPHOR text + 2px phosphor underline with `--glow-phosphor`.
@@ -307,11 +312,27 @@ Orbitron `ui-badge`, 2px radius, `0 var(--space-2)` padding, height `20px`.
 - **Primary:** `1px solid var(--phosphor)`, transparent bg, PHOSPHOR text, Share Tech Mono UPPER. hover: bg `rgba(0,255,148,0.08)` + glow. active: bg PHOSPHOR / text VOID.
 - **Ghost:** `1px solid var(--grid)`, CHROME text. hover: border DUST.
 - **Danger:** as primary but NEON-RED.
+- **Focus (keyboard):** `:focus-visible` → 1px `--focus-ring` (PHOSPHOR) outline, `2px` offset; danger variant uses a NEON-RED outline. Uses `:focus-visible` (not `:focus`), so the ring never shows on mouse click.
 - All buttons `border-radius:0`, padding `var(--space-3) var(--space-5)`.
 
 ### 5.11 Loading / Empty States
 - Loading: blinking `_` cursor (1s steps), **never** a spinner. Optional `LOADING` label + animated `...`.
 - Empty: terminal message e.g. `// NO FRAMES IN THIS ZONE //` in Share Tech Mono FOG.
+
+### 5.12 Modal / Dialog (`TerminalModal`)
+Shared accessible modal primitive (`components/TerminalModal.vue`). **All admin create / edit / publish dialogs use it — never hand-roll a fixed-overlay modal.**
+- **Structure:** `Teleport` to `<body>`; backdrop `rgba(10,10,15,0.9)` at `--z-modal`; panel `--surface`, `1px solid var(--grid)`, `border-radius:0`, corner brackets (§4.6), `max-height:90vh` with scroll. Title in `--font-display` UPPERCASE with phosphor glow.
+- **Accessibility:** `role="dialog"`, `aria-modal="true"`, `aria-labelledby` → title. Focus moves to the first field on open and is **restored to the trigger on close**; focus is **trapped** (Tab / Shift-Tab cycle inside). `Esc` and backdrop click close. Body scroll locked while open.
+- **API:** `v-model` (open state), `title`, `max-width`; default slot = body.
+
+### 5.13 Confirm Dialog (`ui.confirm`)
+Promise-based confirm rendered by `GlobalNotifications.vue`; sits above modals at `--z-confirm`.
+- `role="alertdialog"`, `aria-modal`, focus trap + restore, `Esc` = cancel, `Enter` = confirm, focus defaults to the confirm button.
+- **Danger tone:** NEON-RED title + border. Returns `Promise<boolean>` — replaces native `confirm()`.
+
+### 5.14 Toast (`ui.notify` / `ui.success` / `ui.error`)
+In-aesthetic transient feedback (`GlobalNotifications.vue`) at `--z-toast`, bottom-right, slide-in from the right. (This is the sanctioned terminal toast; the "no pastel toasts" ban in §10 still holds.)
+- Tone borders: success → PHOSPHOR + glow, error → NEON-RED + glow, info → DUST. Monospace, dismissible, optional inline action (e.g. retry). Errors linger longer. Respects reduced motion.
 
 ---
 
@@ -342,6 +363,7 @@ Global frame: `--nav-h` top (48px) + `--status-h` bottom (28px) fixed; content s
 ### 6.5 Roll Detail
 - **Header:** roll metadata as terminal readout — `ROLL #042 // KODAK PORTRA 400 // 36 EXP // SHOT: MAY 2026 // DEV: CINESTILL` in IBM Plex Mono.
 - **Grid:** photo cards below; per-frame index badge `[12/36]`.
+- **Contact sheet (admin):** drag-to-reorder with a keyboard/touch fallback (`◀ ▶` move buttons). Per-frame actions reveal as a hover overlay on pointer devices and as a static action bar on touch (`@media (hover:none)`) — every action stays reachable without hover.
 
 ### 6.6 Digital Monthly
 - **Top rail:** horizontal month selector chips `[ JUN ] [ MAY ] [ APR ]`; active = AMBER border + glow.
@@ -414,6 +436,8 @@ All colors, fonts, spacing, radii, durations, z-index live as `:root` custom pro
 --z-nav: 200;
 --z-lightbox: 300;
 --z-modal: 400;
+--z-toast: 500;
+--z-confirm: 600;
 ```
 
 ### 9.5 Scanline implementation
@@ -446,4 +470,4 @@ styles/
 
 ---
 
-`// END TRANSMISSION // ENDERTHOUGHTS v1.0 //`
+`// END TRANSMISSION // ENDERTHOUGHTS v1.1 //`

@@ -68,6 +68,8 @@
   --z-nav: 200;
   --z-lightbox: 300;
   --z-modal: 400;
+  --z-toast: 500;
+  --z-confirm: 600;
 
   /* transitions */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);

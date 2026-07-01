@@ -24,18 +24,12 @@
       <!-- EXIF / Caption Readout Card -->
       <div class="max-w-4xl w-full mt-6 space-y-4">
         <div class="p-4 border border-gridColor bg-panel">
-          <p class="exif text-xs md:text-sm leading-relaxed text-fog">
-            FILE: <b class="text-chrome font-medium">{{ fileName }}</b>
-            <template v-if="exifData">
-              <span class="mx-2 text-dust">//</span> ISO: <b class="text-chrome font-medium">{{ exifData.ISO || 'N/A' }}</b>
-              <span class="mx-2 text-dust">//</span> APERTURE: <b class="text-chrome font-medium">{{ formattedAperture }}</b>
-              <span class="mx-2 text-dust">//</span> SHUTTER: <b class="text-chrome font-medium">{{ formattedShutter }}</b>
-              <span v-if="cameraInfo" class="mx-2 text-dust">//</span> CAMERA: <b class="text-chrome font-medium">{{ cameraInfo }}</b>
-              <span v-if="lensInfo" class="mx-2 text-dust">//</span> LENS: <b class="text-chrome font-medium">{{ lensInfo }}</b>
-            </template>
-            <template v-else-if="photo.camera || photo.film_stock">
-              <span class="mx-2 text-dust">//</span> CAMERA: <b class="text-chrome font-medium">{{ photo.camera || 'N/A' }}</b>
-              <span class="mx-2 text-dust">//</span> FILM: <b class="text-chrome font-medium">{{ photo.film_stock || 'N/A' }}</b>
+          <p class="exif text-[11px] leading-relaxed text-dust break-all">
+            FILE: <span class="text-fog">{{ fileName }}</span>
+            <!-- Real camera/film metadata (analog), only when set -->
+            <template v-if="photo.camera || photo.film_stock">
+              <span class="mx-2 text-dust/60">//</span> CAMERA: <b class="text-chrome font-medium">{{ photo.camera || 'N/A' }}</b>
+              <span class="mx-2 text-dust/60">//</span> FILM: <b class="text-chrome font-medium">{{ photo.film_stock || 'N/A' }}</b>
             </template>
           </p>
 
@@ -48,6 +42,8 @@
         <div v-if="tags.length > 0" class="flex flex-wrap gap-2 select-none">
           <TagBadge v-for="t in tags" :key="t.id" :name="t.name" :color="t.color" />
         </div>
+
+        <PhotoInteractions v-if="photo" :photo="photo" />
       </div>
     </div>
   </div>
@@ -58,11 +54,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePhotosStore } from '@/stores/photos';
 import TagBadge from '@/components/TagBadge.vue';
+import PhotoInteractions from '@/components/PhotoInteractions.vue';
 
 export default {
   name: 'PhotoDetail',
   components: {
-    TagBadge
+    TagBadge,
+    PhotoInteractions
   },
   setup() {
     const route = useRoute();
@@ -89,47 +87,6 @@ export default {
       return photo.value.tags || [];
     });
 
-    const exifData = computed(() => {
-      if (!photo.value || !photo.value.exif_json) return null;
-      if (typeof photo.value.exif_json === 'string') {
-        try {
-          return JSON.parse(photo.value.exif_json);
-        } catch (e) {
-          return null;
-        }
-      }
-      return photo.value.exif_json;
-    });
-
-    const formattedAperture = computed(() => {
-      if (!exifData.value) return 'N/A';
-      const f = exifData.value.FNumber || exifData.value.ApertureValue;
-      return f ? `f/${f}` : 'N/A';
-    });
-
-    const formattedShutter = computed(() => {
-      if (!exifData.value) return 'N/A';
-      const s = exifData.value.ExposureTime || exifData.value.ShutterSpeedValue;
-      if (!s) return 'N/A';
-      if (s < 1) {
-        return `1/${Math.round(1 / s)}s`;
-      }
-      return `${s}s`;
-    });
-
-    const cameraInfo = computed(() => {
-      if (!exifData.value) return null;
-      const make = exifData.value.Make || '';
-      const model = exifData.value.Model || '';
-      if (!make && !model) return null;
-      return model.toLowerCase().startsWith(make.toLowerCase()) ? model : `${make} ${model}`;
-    });
-
-    const lensInfo = computed(() => {
-      if (!exifData.value) return null;
-      return exifData.value.LensModel || exifData.value.LensInfo || null;
-    });
-
     onMounted(async () => {
       try {
         await photosStore.fetchPhotoDetail(route.params.id);
@@ -146,12 +103,7 @@ export default {
       error,
       imageUrl,
       fileName,
-      tags,
-      exifData,
-      formattedAperture,
-      formattedShutter,
-      cameraInfo,
-      lensInfo
+      tags
     };
   }
 };

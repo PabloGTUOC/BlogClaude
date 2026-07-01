@@ -25,7 +25,7 @@
     <div v-if="selectedIds.length > 0" class="flex items-center gap-3 p-3 border border-neon-red/50 bg-neon-red/5 select-none text-xs font-label">
       <span class="text-neon-red font-bold">{{ selectedIds.length }} FRAMES SELECTED //</span>
       <button class="btn btn--ghost btn--sm py-1" @click="bulkUnpublish">[ BULK UNPUBLISH ]</button>
-      <button class="ml-auto text-[10px] text-dust hover:underline" @click="selectedIds = []">[ CLEAR SELECTION ]</button>
+      <button class="ml-auto inline-flex items-center min-h-[32px] text-xs text-fog hover:underline" @click="selectedIds = []">[ CLEAR SELECTION ]</button>
     </div>
 
     <!-- Table -->
@@ -35,15 +35,15 @@
 
     <div v-else-if="editablePhotos.length === 0" class="text-xs font-body text-fog py-20 border border-dashed border-gridColor text-center select-none space-y-2">
       <div>// NO FRAMES PUBLISHED TO FEED YET //</div>
-      <div class="text-dust">Navigate to a gallery in the admin panel and use the <span class="text-chrome">FEED</span> button on any photo.</div>
+      <div class="text-fog">Navigate to a gallery in the admin panel and use the <span class="text-chrome">FEED</span> button on any photo.</div>
     </div>
 
     <div v-else class="overflow-x-auto border border-gridColor bg-surface">
       <table class="w-full text-left font-body text-xs border-collapse">
-        <thead class="bg-panel/60 border-b border-gridColor font-label text-dust select-none text-[10px] uppercase">
+        <thead class="bg-panel/60 border-b border-gridColor font-label text-fog select-none text-xs uppercase">
           <tr>
-            <th class="p-3 w-6">⠿</th>
-            <th class="p-3 w-8"><input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" /></th>
+            <th class="p-3 w-6"><span aria-hidden="true">⠿</span></th>
+            <th class="p-3 w-8"><input type="checkbox" aria-label="Select all frames" :checked="isAllSelected" @change="toggleSelectAll" /></th>
             <th class="p-3 w-16">Frame</th>
             <th class="p-3 w-28">Origin</th>
             <th class="p-3">Caption &amp; Tags</th>
@@ -63,18 +63,19 @@
             @drop.prevent="onDrop(idx)"
             @dragend="onDragEnd"
           >
-            <td class="p-3 text-center text-dust cursor-grab active:cursor-grabbing select-none text-base leading-none">⠿</td>
-            <td class="p-3"><input type="checkbox" :value="photo.id" v-model="selectedIds" /></td>
+            <td class="p-3 text-center text-dust cursor-grab active:cursor-grabbing select-none text-base leading-none" aria-hidden="true">⠿</td>
+            <td class="p-3"><input type="checkbox" :aria-label="`Select frame ${photo.id}`" :value="photo.id" v-model="selectedIds" /></td>
             <td class="p-3 select-none">
-              <img :src="getThumbUrl(photo)" class="w-12 h-12 border border-gridColor object-cover" alt="thumb" />
+              <img :src="getThumbUrl(photo)" class="w-12 h-12 border border-gridColor object-cover" :alt="photo.caption || `Feed frame ${photo.id}`" loading="lazy" />
             </td>
-            <td class="p-3 text-[10px] text-fog leading-relaxed uppercase">
+            <td class="p-3 text-xs text-fog leading-relaxed uppercase">
               <div>{{ photo.zone }}</div>
-              <div class="text-dust text-[9px] truncate max-w-[110px]">{{ photo.analog_gallery_title || photo.digital_gallery_name || 'N/A' }}</div>
+              <div class="text-fog text-[11px] truncate max-w-[110px]">{{ photo.analog_gallery_title || photo.digital_gallery_name || 'N/A' }}</div>
             </td>
             <td class="p-3 space-y-2">
               <input
                 v-model="photo.caption"
+                :aria-label="`Caption for frame ${photo.id}`"
                 class="w-full bg-void border border-gridColor/60 p-1.5 focus:border-phosphor focus:outline-none text-chrome"
                 placeholder="Empty caption..."
               />
@@ -82,14 +83,15 @@
                 <span
                   v-for="tag in getPhotoTags(photo)"
                   :key="tag.id"
-                  class="tag text-[9px] flex items-center gap-1 py-0.5"
+                  class="tag text-[11px] flex items-center gap-1 py-0.5"
                 >
                   {{ tag.name }}
-                  <button class="text-neon-red hover:underline leading-none ml-0.5" @click="removePhotoTag(photo, tag.id)">×</button>
+                  <button type="button" class="inline-flex items-center justify-center min-w-[20px] min-h-[20px] p-1 text-neon-red hover:underline leading-none ml-0.5" :aria-label="`Remove tag ${tag.name}`" @click="removePhotoTag(photo, tag.id)">×</button>
                 </span>
                 <select
                   v-if="availableTagsForPhoto(photo).length > 0"
-                  class="bg-panel border border-gridColor text-fog font-body text-[10px] px-2 py-0.5 max-w-[100px]"
+                  aria-label="Add tag to frame"
+                  class="bg-panel border border-gridColor text-fog font-body text-xs px-2 py-0.5 max-w-[100px]"
                   @change="addPhotoTag(photo, $event)"
                 >
                   <option value="" disabled selected>+ tag</option>
@@ -101,12 +103,13 @@
               <input
                 v-model.number="photo.sort_order"
                 type="number"
+                :aria-label="`Sort order for frame ${photo.id}`"
                 class="w-16 bg-void border border-gridColor/60 p-1.5 focus:border-phosphor focus:outline-none text-chrome text-center"
               />
             </td>
             <td class="p-3 text-center select-none font-label">
               <button
-                :class="['btn btn--sm py-1 w-24 text-[10px]', photo.is_public ? 'border-phosphor text-phosphor' : 'border-dust text-dust']"
+                :class="['btn btn--sm py-1 w-24 text-xs', photo.is_public ? 'border-phosphor text-phosphor' : 'border-dust text-dust']"
                 @click="photo.is_public = !photo.is_public"
               >[ {{ photo.is_public ? 'PUBLIC' : 'MUTED' }} ]</button>
             </td>
@@ -120,11 +123,13 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useAdminStore } from '@/stores/admin';
+import { useUiStore } from '@/stores/ui';
 
 export default {
   name: 'FeedManager',
   setup() {
     const adminStore = useAdminStore();
+    const ui = useUiStore();
     const saving = ref(false);
     const selectedIds = ref([]);
     const editablePhotos = ref([]);
@@ -213,6 +218,7 @@ export default {
       saving.value = true;
       try {
         const origById = Object.fromEntries(feedPhotos.value.map(p => [p.id, p]));
+        const updates = [];
         for (const item of editablePhotos.value) {
           const orig = origById[item.id];
           const itemTags = parseTags(item.tags);
@@ -225,17 +231,19 @@ export default {
             orig?.is_public !== item.is_public ||
             tagsChanged
           ) {
-            await adminStore.updatePhotoCuration(item.id, {
+            updates.push(adminStore.updatePhotoCuration(item.id, {
               caption: item.caption,
               sort_order: item.sort_order,
               is_public: item.is_public,
               tagIds: itemTags.map(t => t.id)
-            });
+            }));
           }
         }
+        await Promise.all(updates);
         await loadFeed();
+        ui.success('// FEED CHANGES COMMITTED //');
       } catch (err) {
-        alert('Commit failure: ' + err.message);
+        ui.error('Couldn\'t save feed changes. Please try again.');
       } finally {
         saving.value = false;
       }
@@ -243,13 +251,14 @@ export default {
 
     const bulkUnpublish = async () => {
       try {
-        for (const id of selectedIds.value) {
-          await adminStore.updatePhotoCuration(id, { is_public: false });
-        }
+        await Promise.all(
+          selectedIds.value.map(id => adminStore.updatePhotoCuration(id, { is_public: false }))
+        );
         selectedIds.value = [];
         await loadFeed();
+        ui.success('// SELECTED FRAMES UNPUBLISHED //');
       } catch (err) {
-        alert('Bulk unpublish failure: ' + err.message);
+        ui.error('Couldn\'t unpublish those frames. Please try again.');
       }
     };
 

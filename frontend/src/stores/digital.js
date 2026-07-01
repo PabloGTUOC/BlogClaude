@@ -99,6 +99,18 @@ export const useDigitalStore = defineStore('digital', {
         console.error(`Failed to delete digital photo ${photoId}:`, error);
         throw error;
       }
+    },
+    // Deletes several photos, then refreshes the gallery once. Returns { total, failed }
+    // so the caller can report partial failures instead of throwing on the first error.
+    async deletePhotosBulk(photoIds, idOrYearMonth) {
+      const results = await Promise.allSettled(
+        photoIds.map(id => api.delete(`/digital/photos/${id}`))
+      );
+      if (idOrYearMonth) {
+        await this.fetchGalleryDetail(idOrYearMonth);
+      }
+      const failed = results.filter(r => r.status === 'rejected').length;
+      return { total: photoIds.length, failed };
     }
   }
 });

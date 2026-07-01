@@ -17,7 +17,7 @@
         @click="switchTab('pending')"
       >
         Pending Approval
-        <span v-if="pendingCount > 0" class="ml-2 bg-neon-red text-void font-bold text-[9px] px-1 rounded-sm">
+        <span v-if="pendingCount > 0" class="ml-2 bg-neon-red text-void font-bold text-[11px] px-1 rounded-sm">
           {{ pendingCount }}
         </span>
       </button>
@@ -66,6 +66,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useAdminStore } from '@/stores/admin';
+import { useUiStore } from '@/stores/ui';
 import UserRow from '@/components/UserRow.vue';
 
 export default {
@@ -75,6 +76,7 @@ export default {
   },
   setup() {
     const adminStore = useAdminStore();
+    const ui = useUiStore();
     const activeTab = ref('pending');
 
     const loading = computed(() => adminStore.loading);
@@ -107,34 +109,44 @@ export default {
     const handleApprove = async (userId) => {
       try {
         await adminStore.approveUser(userId);
+        ui.success('// ACCESS GRANTED //');
       } catch (err) {
-        alert('Approval failed: ' + err.message);
+        ui.error('Couldn\'t approve this user. Please try again.');
       }
     };
 
     const handleRevoke = async (userId) => {
-      if (confirm('CRITICAL WARN: SUSPEND OPERATOR PRIVILEGES AND REVOKE ALL ACCESS FOR THIS USER?')) {
-        try {
-          await adminStore.revokeUser(userId, activeTab.value);
-        } catch (err) {
-          alert('Revocation failed: ' + err.message);
-        }
+      const ok = await ui.confirm({
+        title: 'REVOKE ACCESS',
+        message: 'Suspend this user and revoke all access? You can restore them later.',
+        confirmLabel: 'REVOKE',
+        cancelLabel: 'CANCEL',
+        tone: 'danger'
+      });
+      if (!ok) return;
+      try {
+        await adminStore.revokeUser(userId, activeTab.value);
+        ui.success('// ACCESS REVOKED //');
+      } catch (err) {
+        ui.error('Couldn\'t revoke access. Please try again.');
       }
     };
 
     const handleRestore = async (userId) => {
       try {
         await adminStore.restoreUser(userId);
+        ui.success('// ACCESS RESTORED //');
       } catch (err) {
-        alert('Restoration failed: ' + err.message);
+        ui.error('Couldn\'t restore this user. Please try again.');
       }
     };
 
     const handleRoleUpdated = async ({ userId, role, group }) => {
       try {
         await adminStore.updateUserRole(userId, role, group);
+        ui.success('// ROLE UPDATED //');
       } catch (err) {
-        alert('Role update failed: ' + err.message);
+        ui.error('Couldn\'t update the role. Please try again.');
       }
     };
 

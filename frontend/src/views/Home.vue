@@ -16,7 +16,7 @@
           ENDER<span class="hero-ab">THOUGHTS</span>
         </h1>
         <p class="hero__sub text-sm md:text-base font-body text-fog max-w-[68ch] leading-relaxed">
-          A transmission from a slightly alternate 1984 — where the network was wired a decade early and photography went digital while still feeling chemical. A place to share with family & friends our daily life trough images. <span class="cursor">_</span>
+          A transmission from a slightly alternate 1983 — where the network was wired a decade early and photography went digital while still feeling chemical. A place to share with family & friends our daily life trough images. <span class="cursor">_</span>
         </p>
       </div>
     </header>
@@ -55,10 +55,10 @@
 
             <!-- Zone + date row -->
             <div class="flex items-center justify-between select-none">
-              <span :class="['font-label text-[10px] px-1.5 py-0.5 border', photo.zone === 'analog' ? 'text-phosphor border-phosphor/40' : 'text-amber border-amber/40']">
+              <span :class="['font-label text-xs px-1.5 py-0.5 border', photo.zone === 'analog' ? 'text-phosphor border-phosphor/40' : 'text-amber border-amber/40']">
                 [ {{ photo.zone === 'analog' ? '35MM' : 'DIGITAL' }} ]
               </span>
-              <span class="font-label text-[10px] text-dust">{{ formatDate(photo) }}</span>
+              <span class="font-label text-xs text-dust">{{ formatDate(photo) }}</span>
             </div>
 
             <!-- Caption -->
@@ -77,8 +77,13 @@
             </div>
 
             <!-- Film info (analog only) -->
-            <div v-if="photo.zone === 'analog' && photo.camera" class="font-label text-[10px] text-dust uppercase select-none">
+            <div v-if="photo.zone === 'analog' && photo.camera" class="font-label text-xs text-dust uppercase select-none">
               {{ photo.camera }}{{ photo.film_stock ? ` // ${photo.film_stock}` : '' }}
+            </div>
+
+            <!-- Likes & comments (inline — clicks stay here, don't open the lightbox) -->
+            <div @click.stop>
+              <PhotoInteractions :photo="photo" />
             </div>
           </div>
         </article>
@@ -94,7 +99,7 @@
             <span v-if="photosStore.loading">LOADING<span class="cursor">_</span></span>
             <span v-else>[ LOAD MORE ]</span>
           </button>
-          <p v-else class="font-label text-[10px] text-dust/50 uppercase tracking-widest">
+          <p v-else class="font-label text-xs text-dust/50 uppercase tracking-widest">
             // END OF TRANSMISSION //
           </p>
         </div>
@@ -118,12 +123,14 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePhotosStore } from '@/stores/photos';
 import TagBadge from '@/components/TagBadge.vue';
 import Lightbox from '@/components/Lightbox.vue';
+import PhotoInteractions from '@/components/PhotoInteractions.vue';
 
 export default {
   name: 'Home',
   components: {
     TagBadge,
-    Lightbox
+    Lightbox,
+    PhotoInteractions
   },
   setup() {
     const photosStore = usePhotosStore();

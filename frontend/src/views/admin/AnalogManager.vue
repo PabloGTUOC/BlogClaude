@@ -29,7 +29,7 @@
 
     <div v-else class="overflow-x-auto border border-gridColor bg-surface">
       <table class="w-full text-left font-body text-xs border-collapse">
-        <thead class="bg-panel/60 border-b border-gridColor font-label text-dust select-none text-[10px] uppercase">
+        <thead class="bg-panel/60 border-b border-gridColor font-label text-fog select-none text-xs uppercase">
           <tr>
             <th class="p-3 w-16 text-center">ID</th>
             <th class="p-3 w-20 text-center">Status</th>
@@ -43,12 +43,12 @@
         <tbody class="divide-y divide-gridColor/50">
           <tr v-for="g in galleries" :key="g.id" class="hover:bg-panel/20">
             <!-- ID -->
-            <td class="p-3 text-center font-label text-dust">
+            <td class="p-3 text-center font-label text-fog">
               #{{ String(g.id).padStart(3, '0') }}
             </td>
             <!-- Status -->
             <td class="p-3 text-center select-none">
-              <span :class="['font-label text-[9px] px-1.5 py-0.5 border', g.is_published ? 'bg-phosphor/10 text-phosphor border-phosphor/30' : 'bg-panel/60 text-dust/60 border-dust/20']">
+              <span :class="['font-label text-[11px] px-1.5 py-0.5 border', g.is_published ? 'bg-phosphor/10 text-phosphor border-phosphor/30' : 'bg-panel/60 text-fog border-dust/40']">
                 {{ g.is_published ? 'LIVE' : 'DRAFT' }}
               </span>
             </td>
@@ -57,12 +57,12 @@
               <router-link :to="`/admin/analog/${g.id}`" class="text-white font-medium hover:text-phosphor uppercase">
                 {{ g.title }}
               </router-link>
-              <div class="text-[10px] text-dust">{{ g.year }}.{{ String(g.month).padStart(2, '0') }}</div>
+              <div class="text-xs text-fog">{{ g.year }}.{{ String(g.month).padStart(2, '0') }}</div>
             </td>
             <!-- Camera & Film -->
-            <td class="p-3 text-[10px] text-fog leading-relaxed uppercase">
-              <div><span class="font-label text-[9px] text-phosphor">CAM //</span> {{ g.camera }}</div>
-              <div class="text-dust mt-0.5"><span class="font-label text-[9px] text-dust">FILM //</span> {{ g.film_stock }}</div>
+            <td class="p-3 text-xs text-fog leading-relaxed uppercase">
+              <div><span class="font-label text-[11px] text-phosphor">CAM //</span> {{ g.camera }}</div>
+              <div class="text-fog mt-0.5"><span class="font-label text-[11px] text-fog">FILM //</span> {{ g.film_stock }}</div>
             </td>
             <!-- Count -->
             <td class="p-3 text-center font-label text-chrome">
@@ -75,24 +75,26 @@
               </div>
             </td>
             <!-- Actions -->
-            <td class="p-3 text-right select-none font-label space-x-3">
-              <router-link :to="`/admin/analog/${g.id}`" class="text-phosphor hover:underline text-[10px]">
-                [ OPEN ]
-              </router-link>
-              <button
-                :class="['text-[10px] hover:underline', g.is_published ? 'text-dust' : 'text-chrome']"
-                :disabled="togglingPublishId === g.id"
-                @click="handleTogglePublish(g)"
-              >
-                <span v-if="togglingPublishId === g.id">...</span>
-                <span v-else>{{ g.is_published ? '[ UNPUBLISH ]' : '[ PUBLISH ]' }}</span>
-              </button>
-              <button class="text-dust hover:text-chrome hover:underline text-[10px]" @click="openEditModal(g)">
-                [ EDIT ]
-              </button>
-              <button class="text-neon-red hover:underline text-[10px]" @click="confirmDeleteRoll(g)">
-                [ SCRAP ]
-              </button>
+            <td class="p-3 select-none font-label">
+              <div class="flex flex-wrap items-center justify-end gap-x-1 gap-y-1">
+                <router-link :to="`/admin/analog/${g.id}`" class="inline-flex items-center min-h-[32px] px-2 text-phosphor hover:underline text-xs">
+                  [ OPEN ]
+                </router-link>
+                <button
+                  :class="['inline-flex items-center min-h-[32px] px-2 text-xs hover:underline', g.is_published ? 'text-fog' : 'text-chrome']"
+                  :disabled="togglingPublishId === g.id"
+                  @click="handleTogglePublish(g)"
+                >
+                  <span v-if="togglingPublishId === g.id">...</span>
+                  <span v-else>{{ g.is_published ? '[ UNPUBLISH ]' : '[ PUBLISH ]' }}</span>
+                </button>
+                <button class="inline-flex items-center min-h-[32px] px-2 text-fog hover:text-chrome hover:underline text-xs" @click="openEditModal(g)">
+                  [ EDIT ]
+                </button>
+                <button class="inline-flex items-center min-h-[32px] px-2 text-neon-red hover:underline text-xs" @click="confirmDeleteRoll(g)">
+                  [ SCRAP ]
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -100,59 +102,56 @@
     </div>
 
     <!-- CREATE / EDIT MODAL (REUSED FORM) -->
-    <div v-if="showModal" class="fixed inset-0 z-[400] bg-void/90 flex items-center justify-center p-6" @click.self="showModal = false">
-      <div class="demo bracket max-w-[500px] w-full bg-surface border border-gridColor p-6">
-        <span class="br-tr"></span><span class="br-bl"></span>
-        <h3 class="text-white font-display text-2xl uppercase mb-6 text-shadow-phosphor">
-          // {{ isEditMode ? 'EDIT' : 'CREATE' }} ANALOG ROLL //
-        </h3>
-        
-        <form @submit.prevent="submitForm" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="text-[10px] font-label text-dust uppercase block mb-1">Roll Title</label>
-              <div class="tinput"><input v-model="form.title" required placeholder="e.g. Tokyo Neon" /></div>
-            </div>
-            <div>
-              <label class="text-[10px] font-label text-dust uppercase block mb-1">Camera Body</label>
-              <div class="tinput"><input v-model="form.camera" required placeholder="e.g. Canon AE-1" /></div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-4">
-            <div class="col-span-2">
-              <label class="text-[10px] font-label text-dust uppercase block mb-1">Film Stock</label>
-              <div class="tinput"><input v-model="form.film_stock" required placeholder="e.g. HP5 Plus" /></div>
-            </div>
-            <div>
-              <label class="text-[10px] font-label text-dust uppercase block mb-1">Month (1-12)</label>
-              <div class="tinput"><input v-model.number="form.month" type="number" min="1" max="12" required /></div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="text-[10px] font-label text-dust uppercase block mb-1">Year</label>
-              <div class="tinput"><input v-model.number="form.year" type="number" min="1900" max="2100" required /></div>
-            </div>
-            <div>
-              <label class="text-[10px] font-label text-dust uppercase block mb-1">Tags (comma separated)</label>
-              <div class="tinput"><input v-model="form.tagsInput" placeholder="street, night" /></div>
-            </div>
-          </div>
-
+    <TerminalModal
+      v-model="showModal"
+      :title="`// ${isEditMode ? 'EDIT' : 'CREATE'} ANALOG ROLL //`"
+      max-width="500px"
+    >
+      <form @submit.prevent="submitForm" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="text-[10px] font-label text-dust uppercase block mb-1">Notes</label>
-            <div class="tinput"><textarea v-model="form.notes" placeholder="Optional roll notes..."></textarea></div>
+            <label for="roll-title" class="text-xs font-label text-fog uppercase block mb-1">Roll Title</label>
+            <div class="tinput"><input id="roll-title" v-model="form.title" required placeholder="e.g. Tokyo Neon" /></div>
           </div>
+          <div>
+            <label for="roll-camera" class="text-xs font-label text-fog uppercase block mb-1">Camera Body</label>
+            <div class="tinput"><input id="roll-camera" v-model="form.camera" required placeholder="e.g. Canon AE-1" /></div>
+          </div>
+        </div>
 
-          <div class="flex justify-end gap-3 pt-4 select-none">
-            <button type="button" class="btn btn--ghost text-xs" @click="showModal = false">[ CANCEL ]</button>
-            <button type="submit" class="btn text-xs">[ {{ isEditMode ? 'UPDATE' : 'TRANSMIT' }} ]</button>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-2">
+            <label for="roll-film" class="text-xs font-label text-fog uppercase block mb-1">Film Stock</label>
+            <div class="tinput"><input id="roll-film" v-model="form.film_stock" required placeholder="e.g. HP5 Plus" /></div>
           </div>
-        </form>
-      </div>
-    </div>
+          <div>
+            <label for="roll-month" class="text-xs font-label text-fog uppercase block mb-1">Month (1-12)</label>
+            <div class="tinput"><input id="roll-month" v-model.number="form.month" type="number" min="1" max="12" required /></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="roll-year" class="text-xs font-label text-fog uppercase block mb-1">Year</label>
+            <div class="tinput"><input id="roll-year" v-model.number="form.year" type="number" min="1900" max="2100" required /></div>
+          </div>
+          <div>
+            <label for="roll-tags" class="text-xs font-label text-fog uppercase block mb-1">Tags (comma separated)</label>
+            <div class="tinput"><input id="roll-tags" v-model="form.tagsInput" placeholder="street, night" /></div>
+          </div>
+        </div>
+
+        <div>
+          <label for="roll-notes" class="text-xs font-label text-fog uppercase block mb-1">Notes</label>
+          <div class="tinput"><textarea id="roll-notes" v-model="form.notes" placeholder="Optional roll notes..."></textarea></div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 select-none">
+          <button type="button" class="btn btn--ghost text-xs" @click="showModal = false">[ CANCEL ]</button>
+          <button type="submit" class="btn text-xs">[ {{ isEditMode ? 'UPDATE' : 'TRANSMIT' }} ]</button>
+        </div>
+      </form>
+    </TerminalModal>
   </div>
 </template>
 
@@ -160,16 +159,20 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAnalogStore } from '@/stores/analog';
 import { useAdminStore } from '@/stores/admin';
+import { useUiStore } from '@/stores/ui';
 import TagBadge from '@/components/TagBadge.vue';
+import TerminalModal from '@/components/TerminalModal.vue';
 
 export default {
   name: 'AdminAnalogManager',
   components: {
-    TagBadge
+    TagBadge,
+    TerminalModal
   },
   setup() {
     const analogStore = useAnalogStore();
     const adminStore = useAdminStore();
+    const ui = useUiStore();
 
     const showModal = ref(false);
     const isEditMode = ref(false);
@@ -260,8 +263,9 @@ export default {
 
         showModal.value = false;
         await analogStore.fetchGalleries();
+        ui.success(isEditMode.value ? '// ROLL UPDATED //' : '// ROLL CREATED //');
       } catch (err) {
-        alert('Archival Form Error: ' + err.message);
+        ui.error('Couldn\'t save this roll. Please check the fields and try again.');
       }
     };
 
@@ -272,17 +276,27 @@ export default {
       try {
         await analogStore.toggleGalleryPublished(roll.id);
       } catch (err) {
-        alert('Toggle publish failed: ' + err.message);
+        ui.error('Couldn\'t change the publish state. Please try again.');
       } finally {
         togglingPublishId.value = null;
       }
     };
 
     const confirmDeleteRoll = async (roll) => {
-      const promptText = `CRITICAL WARN: THIS WILL PERMANENTLY SCRAP '${roll.title}' AND ALL ATTACHED ${roll.photo_count} SCAN FRAMES. PROCEED?`;
-      if (confirm(promptText)) {
+      const ok = await ui.confirm({
+        title: 'SCRAP ROLL',
+        message: `Permanently delete '${roll.title}' and all ${roll.photo_count} scan frames? This can't be undone.`,
+        confirmLabel: 'SCRAP ROLL',
+        cancelLabel: 'KEEP',
+        tone: 'danger'
+      });
+      if (!ok) return;
+      try {
         await analogStore.deleteGallery(roll.id);
         await analogStore.fetchGalleries();
+        ui.success('// ROLL SCRAPPED //');
+      } catch (err) {
+        ui.error('Couldn\'t delete the roll. Please try again.');
       }
     };
 

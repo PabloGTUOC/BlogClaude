@@ -49,18 +49,47 @@
 
       <!-- Photos Grid -->
       <div>
-        <div v-if="photos.length === 0" class="text-xs font-body text-fog py-20 border border-dashed border-gridColor/60 text-center select-none">
-          // NO FRAMES CAPTURED IN THIS TIMELINE YET //
+        <!-- Empty state: first-use onboarding — explains the month + offers both upload paths inline.
+             Hidden while the upload drawer is open so it doesn't sit under an active uploader. -->
+        <div
+          v-if="photos.length === 0 && !showUploadZone"
+          class="demo bracket flex flex-col items-center text-center gap-6 py-16 px-6 border border-gridColor/60 bg-surface/30 select-none"
+        >
+          <span class="br-tr"></span><span class="br-bl"></span>
+
+          <div class="font-display text-7xl leading-none text-amber/60" aria-hidden="true">▦</div>
+
+          <div class="space-y-2 max-w-md">
+            <h3 class="font-display text-white text-3xl uppercase">
+              // EMPTY TIMELINE<span class="cursor">_</span>
+            </h3>
+            <p class="font-body text-xs text-fog leading-relaxed">
+              This is <span class="text-chrome">{{ gallery.display_name }}</span>'s shared gallery.
+              The photos and videos you and the family add will show up here.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-3 justify-center">
+            <button class="btn btn--sm" @click="showUploadZone = true">[ DIRECT UPLOAD ]</button>
+            <button class="btn btn--ghost btn--sm" @click="triggerGooglePhotosPicker">[ LINK GOOGLE PHOTOS ]</button>
+          </div>
+
+          <p class="font-label text-xs text-dust uppercase tracking-wider">
+            Add your first frames to start the month
+          </p>
         </div>
-        <div v-else class="grid-photos">
+
+        <div v-else-if="photos.length > 0" class="grid-photos">
           <!-- Renders cards, with admin delete override overlays -->
           <div v-for="photo in photos" :key="photo.id" class="relative group">
             <PhotoCard :photo="photo" @click="openPhotoLightbox(photo)" />
             
-            <!-- Delete overlay: admins can scrap anything, users can scrap their own uploads -->
+            <!-- Delete overlay: admins can scrap anything, users can scrap their own uploads.
+                 card-action keeps it hover-revealed on pointers but always tappable on touch. -->
             <button
               v-if="isAdmin || photo.uploaded_by === currentUserId"
-              class="absolute top-2 left-2 z-20 btn btn--danger btn--sm text-[9px] py-1 px-2 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+              class="absolute top-2 left-2 z-20 btn btn--danger btn--sm select-none card-action"
+              aria-label="Delete this frame"
               @click.stop="confirmDeletePhoto(photo.id)"
             >
               [ SCRAP ]
@@ -71,17 +100,29 @@
     </div>
 
     <!-- GOOGLE PHOTOS IMPORT PICKER MODAL -->
-    <div v-if="showGooglePicker" class="fixed inset-0 z-[400] bg-void/90 flex items-center justify-center p-6" @click.self="showGooglePicker = false">
-      <div class="demo bracket max-w-[640px] w-full bg-surface border border-gridColor p-6 flex flex-col h-[80vh]">
+    <div
+      v-if="showGooglePicker"
+      class="fixed inset-0 z-[400] bg-void/90 flex items-center justify-center p-6"
+      @click.self="closeGooglePicker"
+    >
+      <div
+        class="demo bracket max-w-[640px] w-full bg-surface border border-gridColor p-6 flex flex-col h-[80vh]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Google Photos picker"
+      >
         <span class="br-tr"></span><span class="br-bl"></span>
-        
-        <header class="mb-4">
-          <h3 class="text-white font-display text-2xl uppercase mb-1 text-shadow-phosphor">// GOOGLE PHOTOS PICKER //</h3>
-          <p class="text-xs font-body text-dust">Select frames to archive into the monthly dashboard</p>
+
+        <header class="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h3 class="text-white font-display text-2xl uppercase mb-1 text-shadow-phosphor">// GOOGLE PHOTOS PICKER //</h3>
+            <p class="text-xs font-body text-dust">Confirm the frames to archive into {{ gallery.display_name }}</p>
+          </div>
+          <button class="btn btn--ghost btn--sm shrink-0" aria-label="Close picker (Esc)" @click="closeGooglePicker">[ ESC ]</button>
         </header>
 
         <!-- Media list -->
-        <div class="flex-1 overflow-y-auto border border-gridColor p-2 bg-void space-y-4">
+        <div class="flex-1 overflow-y-auto border border-gridColor p-2 bg-void">
           <div v-if="googleLoading && googlePickerStatus === 'pending'" class="flex items-center justify-center h-full font-body text-phosphor">
             AUTHORIZING WITH GOOGLE<span class="cursor">...</span>
           </div>
@@ -93,33 +134,41 @@
             // NO PHOTOS SELECTED //
           </div>
           <div v-else class="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            <div 
-              v-for="item in googleMediaItems" 
+            <button
+              v-for="item in googleMediaItems"
               :key="item.id"
-              :class="['relative border cursor-pointer aspect-square bg-panel overflow-hidden', 
-                       selectedGoogleIds.includes(item.id) ? 'border-phosphor shadow-[0_0_4px_#00FF94]' : 'border-gridColor hover:border-dust']"
+              type="button"
+              class="gp-cell"
+              :class="{ 'is-selected': selectedGoogleIds.includes(item.id) }"
+              :aria-pressed="selectedGoogleIds.includes(item.id)"
+              :aria-label="(selectedGoogleIds.includes(item.id) ? 'Selected: ' : 'Select: ') + item.filename"
               @click="toggleGoogleSelect(item)"
             >
-              <img :src="item.thumbnailDataUrl || item.baseUrl" class="w-full h-full object-cover" alt="cloud photo" />
+              <img :src="item.thumbnailDataUrl || item.baseUrl" class="w-full h-full object-cover" alt="" />
+              <!-- Selected wash -->
+              <span v-if="selectedGoogleIds.includes(item.id)" class="absolute inset-0 bg-phosphor/15 pointer-events-none"></span>
               <!-- Video indicator -->
-              <div v-if="item.type === 'VIDEO'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span v-if="item.type === 'VIDEO'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <span class="text-white text-2xl drop-shadow-[0_0_3px_#000]">▶</span>
-              </div>
-              <!-- Selection indicator -->
-              <div v-if="selectedGoogleIds.includes(item.id)" class="absolute top-1 right-1 bg-phosphor text-void font-label text-[9px] px-1 font-bold">
-                SEL
-              </div>
-            </div>
+              </span>
+              <!-- Selection check -->
+              <span
+                v-if="selectedGoogleIds.includes(item.id)"
+                class="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-phosphor text-void font-label text-xs font-bold leading-none"
+              >✓</span>
+            </button>
           </div>
         </div>
 
         <!-- Modal Actions -->
-        <div class="flex justify-between items-center mt-4 border-t border-gridColor/50 pt-4 select-none">
-          <span class="text-xs font-body text-fog">{{ selectedGooglePhotos.length }} SECURE SELECTIONS</span>
+        <div class="flex justify-between items-center mt-4 border-t border-gridColor/50 pt-4 select-none gap-3">
+          <span class="text-xs font-body text-fog">
+            {{ selectedGooglePhotos.length }} {{ selectedGooglePhotos.length === 1 ? 'FRAME' : 'FRAMES' }} SELECTED
+          </span>
           <div class="flex gap-2">
-            <button class="btn btn--ghost text-xs" @click="showGooglePicker = false">[ CLOSE ]</button>
-            <button class="btn text-xs" :disabled="selectedGooglePhotos.length === 0 || importingGoogle" @click="submitGoogleImport">
-              <span v-if="importingGoogle">IMPORTING...</span>
+            <button class="btn btn--ghost btn--sm" @click="closeGooglePicker">[ CLOSE ]</button>
+            <button class="btn btn--sm" :disabled="selectedGooglePhotos.length === 0 || importingGoogle" @click="submitGoogleImport">
+              <span v-if="importingGoogle">IMPORTING<span class="cursor">...</span></span>
               <span v-else>[ IMPORT SELECTED ]</span>
             </button>
           </div>
@@ -140,10 +189,11 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useDigitalStore } from '@/stores/digital';
 import { useAuthStore } from '@/stores/auth';
+import { useUiStore } from '@/stores/ui';
 import GalleryMeta from '@/components/GalleryMeta.vue';
 import PhotoCard from '@/components/PhotoCard.vue';
 import PhotoGrid from '@/components/PhotoGrid.vue';
@@ -163,6 +213,22 @@ export default {
     const route = useRoute();
     const digitalStore = useDigitalStore();
     const authStore = useAuthStore();
+    const ui = useUiStore();
+
+    // Maps backend/OAuth error codes to plain, reassuring copy for non-technical family users.
+    const friendlyGoogleError = (raw) => {
+      const code = String(raw || '').toLowerCase();
+      if (code.includes('cancel') || code === 'access_denied' || code === 'no_code') {
+        return 'Google sign-in was cancelled. Nothing was imported.';
+      }
+      if (code.includes('session') || code.includes('expired')) {
+        return 'Your Google Photos session expired. Please pick your photos again.';
+      }
+      if (code.includes('picker')) {
+        return 'Google Photos couldn\'t open the picker. Please try again.';
+      }
+      return 'Couldn\'t reach Google Photos. Please try again.';
+    };
 
     const error = ref(null);
     const loading = ref(true);
@@ -187,8 +253,38 @@ export default {
 
     const selectedGoogleIds = computed(() => selectedGooglePhotos.value.map(p => p.id));
 
+    // Picker polling timers live at component scope so closeGooglePicker() and unmount
+    // can stop them — otherwise the 2s poll keeps running after the modal closes.
+    let pollTimer = null;
+    let timeoutTimer = null;
+    const stopGooglePolling = () => {
+      if (pollTimer) clearInterval(pollTimer);
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      pollTimer = null;
+      timeoutTimer = null;
+    };
+
+    const closeGooglePicker = () => {
+      stopGooglePolling();
+      showGooglePicker.value = false;
+      googleLoading.value = false;
+    };
+
+    const onPickerKeydown = (e) => {
+      if (e.key === 'Escape' && showGooglePicker.value) {
+        e.preventDefault();
+        closeGooglePicker();
+      }
+    };
+
     onMounted(async () => {
+      window.addEventListener('keydown', onPickerKeydown);
       await loadGallery();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('keydown', onPickerKeydown);
+      stopGooglePolling();
     });
 
     const loadGallery = async () => {
@@ -208,14 +304,28 @@ export default {
         await digitalStore.uploadPhotos(gallery.value.id, formData);
         onSuccess();
         showUploadZone.value = false;
+        const n = files.length;
+        ui.success(`// ${n} ${n === 1 ? 'FRAME' : 'FRAMES'} ARCHIVED //`);
       } catch (err) {
         onFailure();
+        ui.error('Upload failed. Please check your connection and try again.');
       }
     };
 
     const confirmDeletePhoto = async (photoId) => {
-      if (confirm('CRITICAL WARN: SECURELY SCRAP THIS FRAME FROM TIMELINE?')) {
+      const ok = await ui.confirm({
+        title: 'SCRAP FRAME',
+        message: 'Remove this frame from the timeline? This can\'t be undone.',
+        confirmLabel: 'SCRAP IT',
+        cancelLabel: 'KEEP',
+        tone: 'danger'
+      });
+      if (!ok) return;
+      try {
         await digitalStore.deletePhoto(photoId, gallery.value.year_month);
+        ui.success('// FRAME SCRAPPED //');
+      } catch (err) {
+        ui.error('Couldn\'t delete that frame. Please try again.');
       }
     };
 
@@ -230,15 +340,8 @@ export default {
       selectedGooglePhotos.value = [];
       googleMediaItems.value = [];
 
-      let pollTimer = null;
-      let timeoutTimer = null;
-
-      const stopPolling = () => {
-        if (pollTimer) clearInterval(pollTimer);
-        if (timeoutTimer) clearTimeout(timeoutTimer);
-        pollTimer = null;
-        timeoutTimer = null;
-      };
+      // Start clean in case a previous run left timers active
+      stopGooglePolling();
 
       try {
         const { url, sessionId } = await digitalStore.getGooglePhotosOAuthUrl();
@@ -248,16 +351,18 @@ export default {
           try {
             const result = await digitalStore.pollGooglePhotosSession(sessionId);
             if (result.status === 'done') {
-              stopPolling();
+              stopGooglePolling();
               googlePickerStatus.value = 'done';
               googleMediaItems.value = result.items || [];
               googleImportSessionId.value = result.importSessionId;
               googleLoading.value = false;
             } else if (result.status === 'error') {
-              stopPolling();
+              stopGooglePolling();
               googleLoading.value = false;
               showGooglePicker.value = false;
-              alert('Google Photos failed: ' + result.error);
+              ui.error(friendlyGoogleError(result.error), {
+                action: { label: 'RETRY', handler: triggerGooglePhotosPicker }
+              });
             } else if (result.status === 'picking') {
               googlePickerStatus.value = 'picking';
             }
@@ -265,26 +370,21 @@ export default {
           } catch (err) {
             // 404 means session expired (user closed popup without completing)
             if (err.response?.status === 404) {
-              stopPolling();
-              googleLoading.value = false;
-              showGooglePicker.value = false;
+              closeGooglePicker();
             }
           }
         }, 2000);
 
         // Hard timeout after 10 minutes (picker UI may take a while)
         timeoutTimer = setTimeout(() => {
-          stopPolling();
-          if (googleLoading.value) {
-            googleLoading.value = false;
-            showGooglePicker.value = false;
-          }
+          if (googleLoading.value) closeGooglePicker();
+          else stopGooglePolling();
         }, 10 * 60 * 1000);
       } catch (err) {
-        stopPolling();
-        googleLoading.value = false;
-        showGooglePicker.value = false;
-        alert('Failed to start Google Photos: ' + (err.response?.data?.error || err.message));
+        closeGooglePicker();
+        ui.error(friendlyGoogleError(err.response?.data?.error || err.message), {
+          action: { label: 'RETRY', handler: triggerGooglePhotosPicker }
+        });
       }
     };
 
@@ -311,9 +411,16 @@ export default {
         }));
 
         await digitalStore.importGooglePhotos(gallery.value.id, payload, googleImportSessionId.value);
-        showGooglePicker.value = false;
+        closeGooglePicker();
+        const n = payload.length;
+        ui.success(`// ${n} ${n === 1 ? 'FRAME' : 'FRAMES'} ARCHIVED FROM GOOGLE PHOTOS //`);
       } catch (err) {
-        alert('Google Import processing failure: ' + err.message);
+        const code = err.response?.data?.code || err.response?.data?.error || err.message;
+        // Session-expired can't be retried in place (user must re-pick); other failures can.
+        const expired = String(code).toLowerCase().includes('session') || String(code).toLowerCase().includes('expired');
+        ui.error(friendlyGoogleError(code), expired ? {} : {
+          action: { label: 'RETRY', handler: submitGoogleImport }
+        });
       } finally {
         importingGoogle.value = false;
       }
@@ -361,6 +468,7 @@ export default {
       handleFilesUploaded,
       confirmDeletePhoto,
       triggerGooglePhotosPicker,
+      closeGooglePicker,
       toggleGoogleSelect,
       submitGoogleImport,
       openPhotoLightbox,

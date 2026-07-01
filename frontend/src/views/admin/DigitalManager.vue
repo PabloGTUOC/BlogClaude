@@ -11,11 +11,12 @@
 
     <!-- Create Gallery Form -->
     <div class="border border-gridColor bg-surface p-5 space-y-4">
-      <h3 class="text-xs font-label text-dust uppercase select-none">// CREATE MONTHLY GALLERY</h3>
+      <h3 class="text-xs font-label text-fog uppercase select-none">// CREATE MONTHLY GALLERY</h3>
       <form class="flex flex-wrap gap-3 items-end" @submit.prevent="createGallery">
         <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-label text-dust uppercase">Year</label>
+          <label for="dg-year" class="text-xs font-label text-fog uppercase">Year</label>
           <input
+            id="dg-year"
             v-model.number="form.year"
             type="number"
             min="2000"
@@ -25,16 +26,17 @@
           />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-label text-dust uppercase">Month</label>
-          <select v-model.number="form.month" required class="tinput w-36">
+          <label for="dg-month" class="text-xs font-label text-fog uppercase">Month</label>
+          <select id="dg-month" v-model.number="form.month" required class="tinput w-36">
             <option v-for="(name, idx) in monthNames" :key="idx" :value="idx + 1">
               {{ String(idx + 1).padStart(2, '0') }} — {{ name }}
             </option>
           </select>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-label text-dust uppercase">Display Name</label>
+          <label for="dg-name" class="text-xs font-label text-fog uppercase">Display Name</label>
           <input
+            id="dg-name"
             v-model="form.displayName"
             type="text"
             maxlength="50"
@@ -61,7 +63,7 @@
 
     <div v-else class="overflow-x-auto border border-gridColor bg-surface">
       <table class="w-full text-left font-body text-xs border-collapse">
-        <thead class="bg-panel/60 border-b border-gridColor font-label text-dust select-none text-[10px] uppercase">
+        <thead class="bg-panel/60 border-b border-gridColor font-label text-fog select-none text-xs uppercase">
           <tr>
             <th class="p-3 w-16 text-center">Cover</th>
             <th class="p-3">Monthly Timeline</th>
@@ -75,13 +77,14 @@
           <tr v-for="g in galleries" :key="g.id" class="hover:bg-panel/20">
             <!-- Cover thumbnail -->
             <td class="p-3 select-none">
-              <img 
+              <img
                 v-if="g.cover_photo_url"
                 :src="getThumbUrl(g.cover_photo_url)"
-                class="w-10 h-10 border border-gridColor object-cover" 
-                alt="cover" 
+                class="w-10 h-10 border border-gridColor object-cover"
+                :alt="`Cover for ${g.display_name}`"
+                loading="lazy"
               />
-              <div v-else class="w-10 h-10 border border-gridColor border-dashed bg-void flex items-center justify-center text-[8px] text-dust">
+              <div v-else class="w-10 h-10 border border-gridColor border-dashed bg-void flex items-center justify-center text-[10px] text-fog">
                 NO COVER
               </div>
             </td>
@@ -105,7 +108,7 @@
             </td>
             <!-- Moderation link -->
             <td class="p-3 text-right select-none font-label">
-              <router-link :to="`/digital/${g.year_month}`" class="text-amber hover:underline text-[10px]">
+              <router-link :to="`/digital/${g.year_month}`" class="inline-flex items-center justify-end min-h-[32px] text-amber hover:underline text-xs">
                 [ MODERATE CONTROLS ]
               </router-link>
             </td>

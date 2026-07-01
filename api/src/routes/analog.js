@@ -156,13 +156,16 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
                 JOIN photo_tags pt ON pt.tag_id = t.id
                 WHERE pt.photo_id = p.id),
                JSON_ARRAY()
-             ) AS tags
+             ) AS tags,
+             (SELECT COUNT(*) FROM photo_likes pl WHERE pl.photo_id = p.id) AS like_count,
+             (SELECT COUNT(*) FROM photo_comments pc WHERE pc.photo_id = p.id) AS comment_count,
+             EXISTS(SELECT 1 FROM photo_likes pl WHERE pl.photo_id = p.id AND pl.user_id = ?) AS liked_by_me
       FROM photos p
       WHERE p.analog_gallery_id = ?
       ${isAdmin ? '' : 'AND p.in_gallery = 1'}
       ORDER BY p.sort_order ASC, p.created_at DESC
     `;
-    const photos = await db.query(photosQuery, [galleryId]);
+    const photos = await db.query(photosQuery, [req.user.id, galleryId]);
 
     res.json({
       gallery: galleryRows[0],

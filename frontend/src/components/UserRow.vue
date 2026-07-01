@@ -11,14 +11,14 @@
             <span v-if="user.group" class="rbadge rbadge--viewer">{{ user.group }}</span>
           </div>
           <div class="text-xs font-body text-fog">{{ user.email }}</div>
-          <div class="text-[10px] font-body text-dust">REGISTERED: {{ formattedDate }}</div>
+          <div class="text-xs font-body text-dust">REGISTERED: {{ formattedDate }}</div>
         </div>
       </div>
 
       <div class="flex items-center gap-2 self-end sm:self-auto select-none">
         <button
           v-if="user.status === 'approved'"
-          class="btn btn--ghost btn--sm text-[10px]"
+          class="btn btn--ghost btn--sm text-xs"
           @click="showRoleEditor = !showRoleEditor"
         >
           [ {{ showRoleEditor ? 'CLOSE' : 'SET ROLE' }} ]
@@ -40,7 +40,7 @@
     <!-- Inline role editor (approved users only) -->
     <div v-if="showRoleEditor" class="px-4 pb-4 pt-3 border-t border-gridColor/40 flex flex-wrap gap-3 items-end">
       <div class="flex flex-col gap-1">
-        <label class="text-[10px] font-label text-dust uppercase">Role</label>
+        <label class="text-xs font-label text-dust uppercase">Role</label>
         <select v-model="editRole" class="tinput w-32">
           <option value="family">family</option>
           <option value="friend">friend</option>
@@ -49,7 +49,7 @@
         </select>
       </div>
       <div v-if="editRole === 'friend'" class="flex flex-col gap-1">
-        <label class="text-[10px] font-label text-dust uppercase">Group (= gallery tag)</label>
+        <label class="text-xs font-label text-dust uppercase">Group (= gallery tag)</label>
         <select v-model="editGroup" class="tinput w-36">
           <option value="">— no group (sees nothing) —</option>
           <option v-for="t in tags" :key="t.id" :value="t.name">{{ t.name }}</option>

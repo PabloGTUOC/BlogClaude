@@ -39,7 +39,7 @@
         </button>
       </div>
 
-      <p class="text-[9px] font-body text-dust text-center mt-6">
+      <p class="text-[11px] font-body text-dust text-center mt-6">
         ALERT DISPATCHED TO NODE OPERATOR // NODEMAILER DAEMON ACTIVE
       </p>
     </div>

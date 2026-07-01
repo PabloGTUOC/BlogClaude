@@ -184,9 +184,10 @@ enderthoughts/
     ├── nginx.conf
     └── src/
         ├── router/           # guards: pending / approved / admin
-        ├── stores/           # auth, photos, analog, digital, admin
+        ├── stores/           # auth, photos, analog, digital, admin, ui (toasts + confirm)
         ├── views/            # Home, PhotoDetail, analog/*, digital/*, admin/*
-        └── components/       # PhotoCard, Lightbox, UploadZone, UserRow, …
+        └── components/       # PhotoCard, Lightbox, UploadZone, UserRow,
+                              #   TerminalModal (a11y modal), GlobalNotifications (toasts/confirm), …
 ```
 
 ---

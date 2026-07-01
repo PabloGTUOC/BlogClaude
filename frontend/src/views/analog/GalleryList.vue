@@ -14,7 +14,7 @@
       <router-link
         v-if="isAdmin"
         to="/admin/analog"
-        class="btn btn--ghost btn--sm text-[10px] select-none flex-shrink-0 self-start"
+        class="btn btn--ghost btn--sm text-xs select-none flex-shrink-0 self-start"
       >
         [ MANAGE ROLLS ]
       </router-link>
@@ -54,7 +54,7 @@
           </div>
 
           <!-- Frame count -->
-          <div class="absolute bottom-0 right-0 bg-void/80 font-label text-[9px] text-dust px-2 py-1 select-none">
+          <div class="absolute bottom-0 right-0 bg-void/80 font-label text-[11px] text-dust px-2 py-1 select-none">
             {{ g.photo_count }} FRAMES
           </div>
 
@@ -65,7 +65,7 @@
         <!-- Roll metadata -->
         <div class="p-4 space-y-2 border-t border-gridColor">
           <div class="flex items-baseline gap-2">
-            <span class="font-label text-[10px] text-dust/50 select-none flex-shrink-0">
+            <span class="font-label text-xs text-dust/50 select-none flex-shrink-0">
               #{{ String(g.id).padStart(3, '0') }}
             </span>
             <h3 class="font-display text-xl text-white uppercase tracking-wide leading-none group-hover:text-phosphor transition-colors duration-150 truncate">

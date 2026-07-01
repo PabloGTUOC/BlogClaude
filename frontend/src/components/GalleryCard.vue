@@ -11,7 +11,7 @@
     <!-- Terminal corners decoration -->
     <div class="z-10 p-4 flex flex-col justify-between h-full flex-1">
       <div>
-        <div class="text-[11px] font-label text-phosphor tracking-wider uppercase mb-1">
+        <div class="text-xs font-label text-phosphor tracking-wider uppercase mb-1">
           // GALLERY // {{ zone }}
         </div>
         <h3 class="text-xl md:text-2xl font-display text-white tracking-wide uppercase leading-tight">
@@ -22,7 +22,7 @@
         </p>
       </div>
 
-      <div class="mt-4 flex items-center justify-between border-t border-gridColor/50 pt-3 text-[11px] font-label text-dust">
+      <div class="mt-4 flex items-center justify-between border-t border-gridColor/50 pt-3 text-xs font-label text-dust">
         <span>{{ photoCount }} FRAMES</span>
         <span v-if="contributorCount !== undefined" class="text-amber">{{ contributorCount }} CONTRIBUTORS</span>
       </div>

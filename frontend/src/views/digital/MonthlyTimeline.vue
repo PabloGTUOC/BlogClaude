@@ -37,14 +37,14 @@
 
     <!-- Month picker for any month -->
     <div v-if="showPicker" class="border border-gridColor bg-surface p-5 space-y-3 mb-8">
-      <h3 class="text-[10px] font-label text-dust uppercase select-none">// OPEN OR CREATE A SPECIFIC MONTH</h3>
+      <h3 class="text-xs font-label text-dust uppercase select-none">// OPEN OR CREATE A SPECIFIC MONTH</h3>
       <form class="flex flex-wrap gap-3 items-end" @submit.prevent="openMonth">
         <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-label text-dust uppercase">Year</label>
+          <label class="text-xs font-label text-dust uppercase">Year</label>
           <input v-model.number="picker.year" type="number" min="2000" :max="new Date().getFullYear()" required class="tinput w-24" />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-label text-dust uppercase">Month</label>
+          <label class="text-xs font-label text-dust uppercase">Month</label>
           <select v-model.number="picker.month" required class="tinput w-36">
             <option v-for="(name, idx) in monthNames" :key="idx" :value="idx + 1">
               {{ String(idx + 1).padStart(2, '0') }} — {{ name }}
@@ -88,6 +88,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDigitalStore } from '@/stores/digital';
+import { useUiStore } from '@/stores/ui';
 import GalleryCard from '@/components/GalleryCard.vue';
 
 const MONTH_NAMES = ['January','February','March','April','May','June',
@@ -98,6 +99,7 @@ export default {
   components: { GalleryCard },
   setup() {
     const digitalStore = useDigitalStore();
+    const ui = useUiStore();
     const router = useRouter();
     const creating = ref(false);
     const showPicker = ref(false);
@@ -126,7 +128,7 @@ export default {
         });
         router.push(`/digital/${result.conflict ? currentMonthStr : result.year_month}`);
       } catch (err) {
-        alert('Failed to initialize monthly gallery: ' + err.message);
+        ui.error('Couldn\'t start this month\'s gallery. Please try again.');
       } finally {
         creating.value = false;
       }

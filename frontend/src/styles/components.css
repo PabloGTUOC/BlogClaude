@@ -27,6 +27,15 @@
   color: var(--void);
 }
 
+.btn:focus-visible {
+  outline: 1px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.btn--danger:focus-visible {
+  outline-color: var(--neon-red);
+}
+
 .btn--ghost {
   border-color: var(--grid);
   color: var(--chrome);
@@ -109,7 +118,7 @@
 
 .nav__auth {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.1em;
   color: var(--fog);
   text-decoration: none;
@@ -117,7 +126,7 @@
 
 .tab {
   font-family: var(--font-label);
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.1em;
   color: var(--dust);
   text-decoration: none;
@@ -274,7 +283,7 @@
   top: var(--space-2);
   right: var(--space-2);
   font-family: var(--font-label);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   padding: 2px var(--space-2);
   background: rgba(26, 26, 38, 0.85);
@@ -454,7 +463,7 @@
   justify-content: space-between;
   padding: 0 var(--space-5);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--fog);
@@ -558,4 +567,70 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--phosphor);
+}
+
+/* ---------- google photos picker cell ---------- */
+/* Selectable thumbnail in the import picker. Uses tokens (no hard-coded phosphor hex). */
+.gp-cell {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gp-cell:hover { border-color: var(--dust); }
+}
+
+.gp-cell:focus-visible {
+  outline: 1px solid var(--phosphor);
+  outline-offset: 2px;
+}
+
+.gp-cell.is-selected {
+  border-color: var(--phosphor);
+  box-shadow: var(--glow-phosphor);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-cell { transition: none; }
+}
+
+/* ---------- card action affordance ---------- */
+/* A control overlaid on a card (e.g. delete). On pointer+hover devices it reveals on
+   card hover or keyboard focus to keep the grid clean. On touch devices there is no
+   hover, so it stays visible with a comfortable tap target. Apply to the control and
+   put Tailwind's `group` on the card wrapper. */
+.card-action {
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-action {
+    opacity: 0;
+  }
+  .group:hover .card-action,
+  .card-action:focus-visible {
+    opacity: 1;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .card-action {
+    opacity: 1;
+    min-height: 34px;
+    padding: var(--space-2) var(--space-3);
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-action {
+    transition: none;
+  }
 }

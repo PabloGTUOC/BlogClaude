@@ -8,7 +8,7 @@
         // AUTHENTICATE //
       </h2>
 
-      <p class="text-[11px] font-body text-fog text-center mb-8 select-none leading-relaxed">
+      <p class="text-xs font-body text-fog text-center mb-8 select-none leading-relaxed">
         ACCESS REQUIRES GOOGLE IDENTITY VERIFICATION.<br />
         NODE CONNECTIONS ARE MONITORED AND LOGGED.
       </p>
@@ -30,21 +30,21 @@
 
       <!-- Mock Developer Shortcuts -->
       <template v-if="isMockAuth">
-        <div class="w-full text-center font-label text-[10px] text-dust mt-8 mb-2 select-none">
+        <div class="w-full text-center font-label text-xs text-dust mt-8 mb-2 select-none">
           // DEV BYPASS CHANNELS //
         </div>
         <div class="flex gap-2 w-full select-none">
-          <button class="btn btn--ghost btn--sm flex-1 text-[10px]" @click="devMockLogin('mock-admin-token')">
+          <button class="btn btn--ghost btn--sm flex-1 text-xs" @click="devMockLogin('mock-admin-token')">
             [ MOCK ADMIN ]
           </button>
-          <button class="btn btn--ghost btn--sm flex-1 text-[10px]" @click="devMockLogin('family@enderthoughts.com')">
+          <button class="btn btn--ghost btn--sm flex-1 text-xs" @click="devMockLogin('family@enderthoughts.com')">
             [ MOCK USER ]
           </button>
         </div>
       </template>
 
       <!-- Footer Micro-text -->
-      <p class="text-[10px] font-body text-dust text-center mt-8 select-none leading-relaxed">
+      <p class="text-xs font-body text-dust text-center mt-8 select-none leading-relaxed">
         SECURE TRANSMISSION SEC-OAUTH v2 // ALL CONNECTIONS LOGGED // TERMINAL ID: 0x84ED
       </p>
     </div>
