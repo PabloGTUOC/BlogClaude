@@ -7,6 +7,7 @@
   --phosphor: #00FF94;
   --amber: #FFB347;
   --neon-red: #FF2D55;
+  --neon-cyan: #00E0FF;
   --dust: #4A4A6A;
   --fog: #8A8AAA;
   --chrome: #C8C8E8;
@@ -39,7 +40,7 @@
   /* typography */
   --font-display: 'VT323', monospace;
   --font-label:   'Share Tech Mono', monospace;
-  --font-body:    'IBM Plex Mono', monospace;
+  --font-body:    'Martian Mono', monospace;
   --font-ui:      'Orbitron', sans-serif;
 
   /* spacing scale */

@@ -19,9 +19,20 @@
     <div v-else-if="gallery" class="space-y-8">
       <!-- Gallery details header -->
       <div class="border-b border-gridColor pb-6 space-y-3">
-        <h2 class="text-3xl md:text-4xl font-display text-white tracking-wide uppercase">
-          ROLL #{{ String(gallery.id).padStart(3, '0') }}: {{ gallery.title }}
-        </h2>
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <h2 class="text-3xl md:text-4xl font-display text-white tracking-wide uppercase">
+            ROLL #{{ String(gallery.id).padStart(3, '0') }}: {{ gallery.title }}
+          </h2>
+          <button
+            v-if="photos.length > 0"
+            class="btn btn--ghost btn--sm text-xs select-none shrink-0"
+            :disabled="downloading"
+            @click="downloadZip"
+          >
+            <span v-if="downloading">ARCHIVING<span class="cursor">_</span></span>
+            <span v-else>[ ⇩ DOWNLOAD ROLL ]</span>
+          </button>
+        </div>
 
         <GalleryMeta
           :camera="gallery.camera"
@@ -62,6 +73,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAnalogStore } from '@/stores/analog';
+import { useUiStore } from '@/stores/ui';
+import { downloadGalleryZip } from '@/services/download';
 import GalleryMeta from '@/components/GalleryMeta.vue';
 import PhotoGrid from '@/components/PhotoGrid.vue';
 import Lightbox from '@/components/Lightbox.vue';
@@ -76,9 +89,11 @@ export default {
   setup() {
     const route = useRoute();
     const analogStore = useAnalogStore();
-    
+    const ui = useUiStore();
+
     const error = ref(null);
     const loading = ref(true);
+    const downloading = ref(false);
     const selectedPhoto = ref(null);
     const lightboxOpen = ref(false);
 
@@ -135,16 +150,29 @@ export default {
       selectedPhoto.value = photos.value[nextIndex];
     };
 
+    const downloadZip = async () => {
+      downloading.value = true;
+      try {
+        await downloadGalleryZip('analog', gallery.value.id, gallery.value.title);
+      } catch (err) {
+        ui.error('Download failed. Please try again.');
+      } finally {
+        downloading.value = false;
+      }
+    };
+
     return {
       gallery,
       photos,
       loading,
       error,
+      downloading,
       selectedPhoto,
       lightboxOpen,
       openPhotoLightbox,
       closePhotoLightbox,
-      navigateLightbox
+      navigateLightbox,
+      downloadZip
     };
   }
 };

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const archiver = require('archiver');
 const db = require('../db');
 const { verifyJWT, requireApproved, requireAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -11,16 +12,11 @@ const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../upload
 
 // Helper to delete physical files safely
 function deletePhotoFiles(photo) {
-  if (photo.filename) {
-    const fullPath = path.join(uploadPath, photo.filename);
-    fs.unlink(fullPath, err => {
-      if (err && err.code !== 'ENOENT') console.error(`Failed to delete file ${fullPath}:`, err);
-    });
-  }
-  if (photo.thumbnail) {
-    const thumbPath = path.join(uploadPath, photo.thumbnail);
-    fs.unlink(thumbPath, err => {
-      if (err && err.code !== 'ENOENT') console.error(`Failed to delete thumbnail ${thumbPath}:`, err);
+  for (const rel of [photo.filename, photo.thumbnail, photo.thumbnail_small]) {
+    if (!rel) continue;
+    const abs = path.join(uploadPath, rel);
+    fs.unlink(abs, err => {
+      if (err && err.code !== 'ENOENT') console.error(`Failed to delete file ${abs}:`, err);
     });
   }
 }
@@ -177,6 +173,82 @@ router.get('/galleries/:id', verifyJWT, requireApproved, async (req, res) => {
   }
 });
 
+// GET /api/analog/galleries/:id/download - Stream the gallery as a zip.
+// Same visibility rules as the detail view (friends need their group tag).
+router.get('/galleries/:id/download', verifyJWT, requireApproved, async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+
+  try {
+    const { role, group: userGroup } = req.user;
+    const isAdmin = role === 'admin';
+    const isFriend = role === 'friend';
+
+    let accessClause = '';
+    let accessParams = [galleryId];
+
+    if (isFriend) {
+      if (!userGroup) {
+        accessClause = 'AND 1 = 0';
+      } else {
+        accessClause = `
+          AND ag.is_published = 1
+          AND EXISTS (
+            SELECT 1 FROM analog_gallery_tags agt
+            JOIN tags t ON t.id = agt.tag_id
+            WHERE agt.gallery_id = ag.id AND t.name = ?
+          )
+        `;
+        accessParams = [galleryId, userGroup];
+      }
+    } else if (!isAdmin) {
+      accessClause = 'AND ag.is_published = 1';
+    }
+
+    const galleryRows = await db.query(
+      `SELECT ag.title FROM analog_galleries ag WHERE ag.id = ? ${accessClause}`,
+      accessParams
+    );
+    if (galleryRows.length === 0) {
+      return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+    }
+
+    const photos = await db.query(
+      `SELECT filename FROM photos
+       WHERE analog_gallery_id = ? ${isAdmin ? '' : 'AND in_gallery = 1'}
+       ORDER BY sort_order ASC, created_at ASC`,
+      [galleryId]
+    );
+    if (photos.length === 0) {
+      return res.status(404).json({ error: 'Gallery has no photos', code: 'NOT_FOUND' });
+    }
+
+    const safeName = (galleryRows[0].title || '').replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/\s+/g, '_')
+      || `analog-gallery-${galleryId}`;
+    res.attachment(`${safeName}.zip`);
+
+    // store-only: JPEG/MP4 payloads don't compress, so skip deflate CPU
+    const archive = archiver('zip', { store: true });
+    archive.on('error', err => {
+      console.error('Zip stream error:', err);
+      res.destroy(err);
+    });
+    archive.pipe(res);
+
+    photos.forEach((p, i) => {
+      const abs = path.join(uploadPath, p.filename);
+      if (fs.existsSync(abs)) {
+        archive.file(abs, { name: `${String(i + 1).padStart(3, '0')}_${path.basename(p.filename)}` });
+      }
+    });
+    archive.finalize();
+  } catch (error) {
+    console.error('Error building gallery zip:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to build gallery download', code: 'DOWNLOAD_FAILED' });
+    }
+  }
+});
+
 // -------------------------------------------------------------
 // ADMIN WRITE ROUTES (RequireAdmin)
 // -------------------------------------------------------------
@@ -320,12 +392,13 @@ router.post('/galleries/:id/photos', verifyJWT, requireAdmin, upload.array('phot
       const processed = await processUpload(file.path, file.originalname);
 
       const [insertResult] = await db.pool.query(
-        `INSERT INTO photos (zone, analog_gallery_id, filename, thumbnail, width, height, exif_json, uploaded_by) 
-         VALUES ('analog', ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO photos (zone, analog_gallery_id, filename, thumbnail, thumbnail_small, width, height, exif_json, uploaded_by)
+         VALUES ('analog', ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           galleryId,
           processed.filename,
           processed.thumbnail,
+          processed.thumbnail_small,
           processed.width,
           processed.height,
           processed.exif_json,

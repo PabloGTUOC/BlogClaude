@@ -190,6 +190,12 @@ turns "the disk died" from catastrophe into inconvenience.
 
 ## P3 — Product enhancements (aligned with PRODUCT.md)
 
+> **Status:** all P3 items were implemented on 2026-07-02: daily engagement digest email,
+> gallery zip downloads (analog + digital), 320px srcset thumbnails, PWA manifest + icons,
+> and the Session.MD leftovers (two of which — the Login form and feed drag-and-drop —
+> turned out to be already fixed).
+
+
 - **Comment notifications** — the mailer service exists (admin signup alerts); extend it so the
   owner (later: photo uploader) gets a nightly digest of new comments/likes. Engagement is the
   product's stated success metric.

@@ -90,6 +90,7 @@ app.use((err, req, res, next) => {
 });
 
 const { runMigrations } = require('./services/migrations');
+const { startEngagementDigest } = require('./services/digest');
 
 // Bootstrap server lifecycle
 async function bootstrap() {
@@ -100,6 +101,9 @@ async function bootstrap() {
     console.error('CRITICAL: Database migration bootstrap failed:', err.message);
     process.exit(1);
   }
+
+  // Daily likes/comments digest to the owner (state in app_state table)
+  startEngagementDigest();
 
   app.listen(PORT, () => {
     console.log(`===================================================`);

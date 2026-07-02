@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const archiver = require('archiver');
 const db = require('../db');
 const { verifyJWT, requireFamily } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -21,16 +22,11 @@ const importSessions = new Map();
 
 // Helper to delete physical files
 function deletePhotoFiles(photo) {
-  if (photo.filename) {
-    const fullPath = path.join(uploadPath, photo.filename);
-    fs.unlink(fullPath, err => {
-      if (err && err.code !== 'ENOENT') console.error(`Failed to delete file ${fullPath}:`, err);
-    });
-  }
-  if (photo.thumbnail) {
-    const thumbPath = path.join(uploadPath, photo.thumbnail);
-    fs.unlink(thumbPath, err => {
-      if (err && err.code !== 'ENOENT') console.error(`Failed to delete thumbnail ${thumbPath}:`, err);
+  for (const rel of [photo.filename, photo.thumbnail, photo.thumbnail_small]) {
+    if (!rel) continue;
+    const abs = path.join(uploadPath, rel);
+    fs.unlink(abs, err => {
+      if (err && err.code !== 'ENOENT') console.error(`Failed to delete file ${abs}:`, err);
     });
   }
 }
@@ -304,6 +300,56 @@ router.get('/galleries/:idOrYearMonth', async (req, res) => {
   }
 });
 
+// GET /api/digital/galleries/:id/download - Stream the month's media as a zip
+// (family/admin only via the router-level guard above)
+router.get('/galleries/:id/download', async (req, res) => {
+  const galleryId = parseInt(req.params.id, 10);
+
+  try {
+    const galleryRows = await db.query(
+      'SELECT `year_month`, display_name FROM digital_galleries WHERE id = ?',
+      [galleryId]
+    );
+    if (galleryRows.length === 0) {
+      return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+    }
+
+    const photos = await db.query(
+      'SELECT filename FROM photos WHERE digital_gallery_id = ? ORDER BY created_at ASC',
+      [galleryId]
+    );
+    if (photos.length === 0) {
+      return res.status(404).json({ error: 'Gallery has no media', code: 'NOT_FOUND' });
+    }
+
+    const gallery = galleryRows[0];
+    const safeName = (gallery.display_name || gallery.year_month || '').replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/\s+/g, '_')
+      || `digital-gallery-${galleryId}`;
+    res.attachment(`${safeName}.zip`);
+
+    // store-only: JPEG/MP4 payloads don't compress, so skip deflate CPU
+    const archive = archiver('zip', { store: true });
+    archive.on('error', err => {
+      console.error('Zip stream error:', err);
+      res.destroy(err);
+    });
+    archive.pipe(res);
+
+    photos.forEach((p, i) => {
+      const abs = path.join(uploadPath, p.filename);
+      if (fs.existsSync(abs)) {
+        archive.file(abs, { name: `${String(i + 1).padStart(3, '0')}_${path.basename(p.filename)}` });
+      }
+    });
+    archive.finalize();
+  } catch (error) {
+    console.error('Error building gallery zip:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to build gallery download', code: 'DOWNLOAD_FAILED' });
+    }
+  }
+});
+
 // POST /api/digital/galleries - Create monthly gallery
 router.post('/galleries', async (req, res) => {
   const { year_month, display_name } = req.body;
@@ -380,12 +426,13 @@ router.post('/galleries/:id/photos', async (req, res) => {
             : await processUpload(file.path, file.originalname);
 
           const [insertResult] = await db.pool.query(
-            `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, duration, media_type, exif_json, uploaded_by, source)
-             VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'direct')`,
+            `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, thumbnail_small, width, height, duration, media_type, exif_json, uploaded_by, source)
+             VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'direct')`,
             [
               galleryId,
               processed.filename,
               processed.thumbnail,
+              processed.thumbnail_small,
               processed.width,
               processed.height,
               processed.duration,
@@ -443,12 +490,13 @@ router.post('/galleries/:id/photos', async (req, res) => {
           : await importGooglePhoto(item.baseUrl, item.filename, item.creationTime, accessToken);
 
         const [insertResult] = await db.pool.query(
-          `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, duration, media_type, exif_json, uploaded_by, source, google_photos_id)
-           VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google_photos', ?)`,
+          `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, thumbnail_small, width, height, duration, media_type, exif_json, uploaded_by, source, google_photos_id)
+           VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google_photos', ?)`,
           [
             galleryId,
             processed.filename,
             processed.thumbnail,
+            processed.thumbnail_small,
             processed.width,
             processed.height,
             processed.duration,

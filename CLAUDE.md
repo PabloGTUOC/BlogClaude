@@ -36,7 +36,7 @@ Local dev without Firebase credentials requires `ALLOW_MOCK_AUTH=true` (never in
   serving any file. Never re-add `express.static` for uploads.
 - **Migrations** live in `db/migrations/NNN_description.sql`, run automatically on API boot,
   tracked in `migrations_history`. Never edit an applied migration — add a new numbered file.
-- **Media pipeline:** images → sharp (full 5000px + thumb 900px JPEG, random hex filenames);
+- **Media pipeline:** images → sharp (full 5000px + thumb 900px + small 320px JPEG, random hex filenames);
   videos → probed and stored as browser-safe H.264/AAC MP4 (remux or transcode as needed).
   Uploads stage on disk under `UPLOAD_PATH/tmp`, never in memory. Filenames must stay
   unguessable (crypto-random) — they are part of the access-control story.

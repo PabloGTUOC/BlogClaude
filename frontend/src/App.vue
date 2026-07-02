@@ -28,18 +28,19 @@
             [ ADMIN ]
           </router-link>
         </template>
-
-        <!-- Authentication Badge -->
-        <router-link v-if="!isAuthenticated" to="/login" class="nav__auth font-label hover:text-white transition-colors duration-150">
-          [ AUTHENTICATE ]
-        </router-link>
-        <span v-else class="nav__auth font-label text-fog select-none flex items-center gap-2">
-          <span>{{ userProfileName }} ●</span>
-          <button class="text-xs text-neon-red hover:underline focus:outline-none" @click="handleLogout">
-            [ OUT ]
-          </button>
-        </span>
       </div>
+
+      <!-- Authentication Badge: outside the scrollable tab strip so it never
+           scrolls off-screen on mobile -->
+      <router-link v-if="!isAuthenticated" to="/login" class="nav__auth font-label hover:text-white transition-colors duration-150">
+        [ AUTHENTICATE ]
+      </router-link>
+      <span v-else class="nav__auth font-label text-fog select-none flex items-center gap-2">
+        <span>{{ userProfileName }} ●</span>
+        <button class="text-xs text-neon-red hover:underline focus:outline-none" @click="handleLogout">
+          [ OUT ]
+        </button>
+      </span>
     </nav>
 
     <!-- Main Content scrolls between Top Nav and Bottom Status Bar -->

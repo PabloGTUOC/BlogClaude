@@ -32,6 +32,15 @@
 
         <!-- Ingestion actions -->
         <div class="flex gap-3 select-none self-end md:self-auto">
+          <button
+            v-if="photos.length > 0"
+            class="btn btn--ghost btn--sm"
+            :disabled="downloading"
+            @click="downloadZip"
+          >
+            <span v-if="downloading">ARCHIVING<span class="cursor">_</span></span>
+            <span v-else>[ ⇩ DOWNLOAD ]</span>
+          </button>
           <button class="btn btn--ghost btn--sm" @click="triggerGooglePhotosPicker">
             [ LINK GOOGLE PHOTOS ]
           </button>
@@ -197,6 +206,7 @@ import { useUiStore } from '@/stores/ui';
 import PhotoCard from '@/components/PhotoCard.vue';
 import UploadZone from '@/components/UploadZone.vue';
 import Lightbox from '@/components/Lightbox.vue';
+import { downloadGalleryZip } from '@/services/download';
 
 export default {
   name: 'DigitalMonthlyGallery',
@@ -229,6 +239,7 @@ export default {
     const error = ref(null);
     const loading = ref(true);
     const showUploadZone = ref(false);
+    const downloading = ref(false);
     
     const selectedPhoto = ref(null);
     const lightboxOpen = ref(false);
@@ -443,12 +454,25 @@ export default {
       selectedPhoto.value = photos.value[nextIndex];
     };
 
+    const downloadZip = async () => {
+      downloading.value = true;
+      try {
+        await downloadGalleryZip('digital', gallery.value.id, gallery.value.display_name);
+      } catch (err) {
+        ui.error('Download failed. Please try again.');
+      } finally {
+        downloading.value = false;
+      }
+    };
+
     return {
       gallery,
       photos,
       loading,
       error,
       showUploadZone,
+      downloading,
+      downloadZip,
       isAdmin,
       currentUserId,
       selectedPhoto,

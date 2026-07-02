@@ -110,6 +110,11 @@
   gap: var(--space-1);
   overflow-x: auto;
   scrollbar-width: none;
+  /* Take the middle of the bar and keep tabs right-aligned; the auth badge
+     sits outside this scroll strip so it stays visible on mobile. */
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
 }
 
 .nav__tabs::-webkit-scrollbar {
@@ -118,6 +123,7 @@
 
 .nav__auth {
   flex-shrink: 0;
+  margin-left: var(--space-2);
   font-size: 13px;
   letter-spacing: 0.1em;
   color: var(--fog);
@@ -164,7 +170,9 @@
   pointer-events: none;
   z-index: var(--z-scanlines);
   opacity: 0.04;
-  mix-blend-mode: overlay;
+  /* 'overlay' was invisible on the near-black background; 'screen' lets the
+     grain read as faint phosphor noise. */
+  mix-blend-mode: screen;
 }
 
 /* ---------- demo (modal decoration anchor) ---------- */
