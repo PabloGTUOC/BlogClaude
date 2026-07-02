@@ -9,9 +9,11 @@ const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../upload
 // Ensure directories exist
 const fullDir = path.join(uploadPath, 'full');
 const thumbsDir = path.join(uploadPath, 'thumbs');
+const smallDir = path.join(uploadPath, 'small');
 
 fs.mkdirSync(fullDir, { recursive: true });
 fs.mkdirSync(thumbsDir, { recursive: true });
+fs.mkdirSync(smallDir, { recursive: true });
 
 // `input` may be a file path (disk-based multer uploads) or a Buffer
 // (Google Photos imports) — sharp and exifr accept both natively.
@@ -35,6 +37,7 @@ async function processUpload(input, _originalName) {
 
   const fullPath = path.join(fullDir, filenameBase);
   const thumbPath = path.join(thumbsDir, filenameBase);
+  const smallPath = path.join(smallDir, filenameBase);
 
   // Get image dimensions & orientation
   const image = sharp(input);
@@ -73,9 +76,21 @@ async function processUpload(input, _originalName) {
     .jpeg({ quality: 88, chromaSubsampling: '4:4:4' })
     .toFile(thumbPath);
 
+  // Small variant (max 320px long edge) — the srcset entry for phone-width cards
+  let smallPipeline = sharp(input).rotate();
+  if (originalWidth > 320 || originalHeight > 320) {
+    smallPipeline = originalWidth >= originalHeight
+      ? smallPipeline.resize({ width: 320 })
+      : smallPipeline.resize({ height: 320 });
+  }
+  await smallPipeline
+    .jpeg({ quality: 82 })
+    .toFile(smallPath);
+
   return {
     filename: `full/${filenameBase}`,
     thumbnail: `thumbs/${filenameBase}`,
+    thumbnail_small: `small/${filenameBase}`,
     width: fullInfo.width,
     height: fullInfo.height,
     duration: null,

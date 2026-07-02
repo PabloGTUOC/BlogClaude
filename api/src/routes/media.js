@@ -16,7 +16,7 @@ const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../upload
 //                                   friends additionally need their group tag
 // Auth arrives as a Bearer header or the /uploads-scoped media cookie set at
 // login (plain <img>/<video> tags can't send headers).
-router.get('/:dir(full|thumbs)/:name', optionalAuth, async (req, res) => {
+router.get('/:dir(full|thumbs|small)/:name', optionalAuth, async (req, res) => {
   const { dir, name } = req.params;
 
   // Route params never contain '/', but be explicit about traversal anyway.
@@ -26,15 +26,15 @@ router.get('/:dir(full|thumbs)/:name', optionalAuth, async (req, res) => {
   const rel = `${dir}/${name}`;
 
   try {
-    // A photo row owns two files (full + thumbnail); match either column.
+    // A photo row owns its files (full + thumbnail + small); match any column.
     const rows = await db.query(
       `SELECT p.is_public, p.zone, p.analog_gallery_id,
               ag.is_published AS analog_published
        FROM photos p
        LEFT JOIN analog_galleries ag ON ag.id = p.analog_gallery_id
-       WHERE p.filename = ? OR p.thumbnail = ?
+       WHERE p.filename = ? OR p.thumbnail = ? OR p.thumbnail_small = ?
        LIMIT 1`,
-      [rel, rel]
+      [rel, rel, rel]
     );
 
     if (rows.length === 0) {

@@ -89,7 +89,8 @@ revoked tabs, with role + group assignment). Guarded on both router and backend 
 Every upload (analog/digital, direct or Google Photos):
 
 - **Images** → `sharp`: full image (max 5000px long edge, JPEG q92, 4:4:4) + thumbnail (max 900px,
-  q88); EXIF extracted with `exifr`. Stored under `UPLOAD_PATH/full` and `UPLOAD_PATH/thumbs`.
+  q88) + small variant (max 320px, q82) for mobile `srcset`; EXIF extracted with `exifr`.
+  Stored under `UPLOAD_PATH/full`, `UPLOAD_PATH/thumbs` and `UPLOAD_PATH/small`.
 - **Videos** → probed with `ffprobe` and stored as browser-playable MP4: H.264/AAC sources in an
   MP4 container are kept untouched, H.264 in the wrong container (e.g. iPhone `.mov`) is remuxed
   (fast, no re-encode), and anything else (HEVC, legacy codecs) is transcoded to H.264/AAC.
@@ -135,6 +136,8 @@ Migrations live in `db/migrations/` and run **automatically on API boot**
 | `010_add_likes_comments.sql` | `photo_likes`, `photo_comments` |
 | `011_add_indexes.sql` | public feed index on `photos` |
 | `012_add_media_lookup_indexes.sql` | filename/thumbnail indexes for the media route |
+| `013_add_small_thumbnails.sql` | `thumbnail_small` (320px srcset variant) |
+| `014_create_app_state.sql` | `app_state` key/value (digest bookkeeping) |
 
 Core `photos` columns: `zone`, `analog_gallery_id`/`digital_gallery_id`, `filename`, `thumbnail`,
 `width`, `height`, `duration`, `media_type`, `exif_json`, `is_public`, `caption`, `sort_order`,
@@ -158,11 +161,13 @@ their JSON routes. `<img>`/`<video>` tags authenticate via the login cookie.
 
 **Analog** (GET: `requireApproved`, filtered for friends; writes: `requireAdmin`)
 `GET/POST /api/analog/galleries`, `GET/PUT/DELETE /api/analog/galleries/:id`,
+`GET /api/analog/galleries/:id/download` (zip),
 `POST /api/analog/galleries/:id/photos`, `DELETE /api/analog/photos/:id`,
 `POST /api/analog/photos/:id/publish`, `PUT /api/analog/photos/:id/unpublish`
 
 **Digital** (`requireFamily`)
 `GET/POST /api/digital/galleries`, `GET /api/digital/galleries/:id`,
+`GET /api/digital/galleries/:id/download` (zip),
 `POST /api/digital/galleries/:id/photos` (direct multipart **or** `google_photos` source),
 `DELETE /api/digital/photos/:id` (own, or any if admin),
 plus Google Photos: `GET …/google-photos/oauth-url`, `GET …/google-photos/callback`,
@@ -182,7 +187,7 @@ enderthoughts/
 ├── deploy.sh                 # validate .env → build (amd64) → compose up
 ├── .env.example
 ├── SETUP.md                  # full setup & deployment guide
-├── db/migrations/            # 001–012, auto-applied on boot
+├── db/migrations/            # 001–014, auto-applied on boot
 ├── api/
 │   ├── Dockerfile
 │   └── src/

@@ -45,6 +45,8 @@
           <!-- Photo -->
           <img
             :src="thumbUrl(photo)"
+            :srcset="thumbSrcset(photo)"
+            sizes="(max-width: 640px) 100vw, 33vw"
             class="w-full h-auto block"
             :alt="photo.caption || 'frame'"
             loading="lazy"
@@ -170,6 +172,12 @@ export default {
       return `${apiBase}/uploads/${photo.thumbnail}`;
     };
 
+    // 320px + 900px srcset; pre-migration photos lack the small variant
+    const thumbSrcset = (photo) => {
+      if (!photo?.thumbnail_small || photo.thumbnail.startsWith('http')) return undefined;
+      return `${apiBase}/uploads/${photo.thumbnail_small} 320w, ${apiBase}/uploads/${photo.thumbnail} 900w`;
+    };
+
     const formatDate = (photo) => {
       if (photo.published_at) {
         const d = new Date(photo.published_at);
@@ -209,6 +217,7 @@ export default {
       loadMore,
       parseTags,
       thumbUrl,
+      thumbSrcset,
       formatDate,
       openPhotoLightbox,
       closePhotoLightbox,
@@ -220,6 +229,6 @@ export default {
 
 <style scoped>
 .hero-ab:hover {
-  text-shadow: -1px 0 var(--neon-red), 1px 0 #00e0ff;
+  text-shadow: -1px 0 var(--neon-red), 1px 0 var(--neon-cyan);
 }
 </style>

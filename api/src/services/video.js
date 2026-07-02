@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
@@ -12,10 +13,12 @@ ffmpeg.setFfprobePath(ffprobeStatic.path);
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads');
 const fullDir = path.join(uploadPath, 'full');
 const thumbsDir = path.join(uploadPath, 'thumbs');
+const smallDir = path.join(uploadPath, 'small');
 const tmpDir = path.join(uploadPath, 'tmp');
 
 fs.mkdirSync(fullDir, { recursive: true });
 fs.mkdirSync(thumbsDir, { recursive: true });
+fs.mkdirSync(smallDir, { recursive: true });
 fs.mkdirSync(tmpDir, { recursive: true });
 
 function probe(filePath) {
@@ -146,13 +149,25 @@ async function processVideo(input, originalName) {
     });
 
     // Sanity check the thumbnail actually got written
+    let thumbnailSmall = null;
     if (!fs.existsSync(thumbFullPath)) {
       console.warn('Poster frame was not generated for', videoFilename);
+    } else {
+      // Small poster variant for card srcset (non-fatal if it fails)
+      try {
+        const smallFullPath = path.join(smallDir, thumbFilename);
+        await sharp(thumbFullPath).resize({ width: 320, withoutEnlargement: true })
+          .jpeg({ quality: 82 }).toFile(smallFullPath);
+        thumbnailSmall = `small/${thumbFilename}`;
+      } catch (err) {
+        console.warn('Small poster variant failed:', err.message);
+      }
     }
 
     return {
       filename: `full/${videoFilename}`,
       thumbnail: `thumbs/${thumbFilename}`,
+      thumbnail_small: thumbnailSmall,
       width,
       height,
       duration,

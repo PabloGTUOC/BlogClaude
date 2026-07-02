@@ -6,7 +6,7 @@
     </span>
 
     <!-- Thumbnail Image (poster frame for videos) -->
-    <img class="pcard__img w-full h-full object-cover absolute inset-0" :src="thumbUrl" :alt="photo.caption || 'Photo'" loading="lazy" />
+    <img class="pcard__img w-full h-full object-cover absolute inset-0" :src="thumbUrl" :srcset="thumbSrcset" sizes="(max-width: 640px) 50vw, 300px" :alt="photo.caption || 'Photo'" loading="lazy" />
 
     <!-- Video play overlay -->
     <div v-if="photo.media_type === 'video'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -96,6 +96,13 @@ export default {
       return `${apiBase}/uploads/${props.photo.thumbnail}`;
     });
 
+    // 320px + 900px srcset; photos uploaded before the small variant existed
+    // have no thumbnail_small and just use the 900px thumb.
+    const thumbSrcset = computed(() => {
+      if (!props.photo.thumbnail_small || props.photo.thumbnail.startsWith('http')) return undefined;
+      return `${apiBase}/uploads/${props.photo.thumbnail_small} 320w, ${apiBase}/uploads/${props.photo.thumbnail} 900w`;
+    });
+
     const imageUrl = computed(() => {
       if (!props.photo.filename) return '';
       if (props.photo.filename.startsWith('http')) return props.photo.filename;
@@ -112,6 +119,7 @@ export default {
 
     return {
       thumbUrl,
+      thumbSrcset,
       imageUrl,
       formattedDuration,
       liked,

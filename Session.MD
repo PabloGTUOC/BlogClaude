@@ -2,6 +2,10 @@
 
 Last updated: 2026-06-26
 
+> **2026-07-02:** everything below in "Still Pending" and "Design Pending" is now resolved —
+> functional gaps 1–4 (1/2/4 were already done; 3 documented in README) and design items A–D
+> shipped with the P3 batch. See `ENHANCEMENTS.md` for the current backlog.
+
 ---
 
 ## Fixed This Session (2026-06-26)
