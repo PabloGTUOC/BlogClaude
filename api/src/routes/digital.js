@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const db = require('../db');
-const { verifyJWT, requireApproved, requireFamily } = require('../middleware/auth');
+const { verifyJWT, requireFamily } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { processUpload } = require('../services/sharp');
 const { processVideo } = require('../services/video');
@@ -12,7 +12,9 @@ const { importGooglePhoto, importGoogleVideo } = require('../services/googlePhot
 
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads');
 
-// In-memory store for Google Photos OAuth sessions (cleared after use or 10 min timeout)
+// In-memory store for Google Photos OAuth sessions (cleared after use or 10 min timeout).
+// NOTE: both maps assume a single API instance — sessions die on restart and won't be
+// shared across replicas. Fine for this deployment; needs external storage if that changes.
 const oauthSessions = new Map();
 // Holds access tokens between poll-done and the subsequent import request (30 min TTL)
 const importSessions = new Map();
@@ -35,7 +37,7 @@ function deletePhotoFiles(photo) {
 
 // GET /api/digital/google-photos/oauth-url
 // Returns a one-time Google OAuth URL + sessionId. Frontend opens this URL in a popup.
-router.get('/google-photos/oauth-url', verifyJWT, (req, res) => {
+router.get('/google-photos/oauth-url', verifyJWT, requireFamily, (req, res) => {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientSecret) {
     return res.status(500).json({ error: 'Google client secret not configured', code: 'CONFIG_ERROR' });
@@ -150,7 +152,7 @@ router.get('/google-photos/picker-done', (req, res) => {
 //   'pending'  — waiting for OAuth callback
 //   'picking'  — OAuth done, user is selecting in Google's picker popup
 //   'done'     — items selected, returned to frontend
-router.get('/google-photos/poll/:sessionId', verifyJWT, async (req, res) => {
+router.get('/google-photos/poll/:sessionId', verifyJWT, requireFamily, async (req, res) => {
   const session = oauthSessions.get(req.params.sessionId);
   if (!session) {
     return res.status(404).json({ error: 'Session not found or expired', code: 'SESSION_NOT_FOUND' });
@@ -342,6 +344,18 @@ router.post('/galleries', async (req, res) => {
 router.post('/galleries/:id/photos', async (req, res) => {
   const galleryId = parseInt(req.params.id, 10);
 
+  // Validate the target before processing anything, so a bad gallery id is a
+  // clean 404 instead of an FK-violation 500 after files hit the disk.
+  try {
+    const galleryRows = await db.query('SELECT id FROM digital_galleries WHERE id = ?', [galleryId]);
+    if (galleryRows.length === 0) {
+      return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+    }
+  } catch (error) {
+    console.error('Error checking gallery existence:', error);
+    return res.status(500).json({ error: 'Failed to verify gallery', code: 'DATABASE_ERROR' });
+  }
+
   // Determine if it's a direct multipart file upload or Google Photos import payload
   const isMultipart = req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data');
 
@@ -349,6 +363,7 @@ router.post('/galleries/:id/photos', async (req, res) => {
     // Standard file upload processing
     upload.array('photos', 12)(req, res, async (err) => {
       if (err) {
+        upload.cleanupFiles(req.files); // files staged before the failure
         return res.status(400).json({ error: err.message, code: 'MULTER_ERROR' });
       }
 
@@ -361,8 +376,8 @@ router.post('/galleries/:id/photos', async (req, res) => {
         for (const file of req.files) {
           const isVideo = file.mimetype.startsWith('video/');
           const processed = isVideo
-            ? await processVideo(file.buffer, file.originalname)
-            : await processUpload(file.buffer, file.originalname);
+            ? await processVideo(file.path, file.originalname)
+            : await processUpload(file.path, file.originalname);
 
           const [insertResult] = await db.pool.query(
             `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, width, height, duration, media_type, exif_json, uploaded_by, source)
@@ -399,6 +414,8 @@ router.post('/galleries/:id/photos', async (req, res) => {
       } catch (uploadErr) {
         console.error('Multipart upload processing failed:', uploadErr);
         res.status(500).json({ error: 'Upload processing failed: ' + uploadErr.message, code: 'UPLOAD_FAILED' });
+      } finally {
+        upload.cleanupFiles(req.files);
       }
     });
   } else {

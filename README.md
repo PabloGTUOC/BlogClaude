@@ -90,10 +90,13 @@ Every upload (analog/digital, direct or Google Photos):
 
 - **Images** → `sharp`: full image (max 5000px long edge, JPEG q92, 4:4:4) + thumbnail (max 900px,
   q88); EXIF extracted with `exifr`. Stored under `UPLOAD_PATH/full` and `UPLOAD_PATH/thumbs`.
-- **Videos** → stored as-is; `ffmpeg`/`ffprobe` (bundled, static binaries) extract a poster-frame
-  thumbnail plus dimensions and duration. Rendered with a `<video>` player in the lightbox and a
-  play badge + duration on cards.
-- Accepts `image/*` and `video/*`, up to **200 MB** per file.
+- **Videos** → probed with `ffprobe` and stored as browser-playable MP4: H.264/AAC sources in an
+  MP4 container are kept untouched, H.264 in the wrong container (e.g. iPhone `.mov`) is remuxed
+  (fast, no re-encode), and anything else (HEVC, legacy codecs) is transcoded to H.264/AAC.
+  `ffmpeg` extracts a poster-frame thumbnail plus dimensions and duration. Rendered with a
+  `<video>` player in the lightbox and a play badge + duration on cards.
+- Accepts `image/*` and `video/*`, up to **200 MB** per file. Incoming files are staged on disk
+  (`UPLOAD_PATH/tmp`), not in memory, and cleaned up after processing.
 
 The `photos` table tracks `media_type` (`image` | `video`) and `duration`.
 
@@ -129,6 +132,9 @@ Migrations live in `db/migrations/` and run **automatically on API boot**
 | `007_add_gallery_published_and_in_gallery.sql` | `is_published`, `in_gallery` |
 | `008_user_roles_and_groups.sql` | role enum → `admin/family/friend/user`, `group` column |
 | `009_add_media_type_to_photos.sql` | `media_type`, `duration` |
+| `010_add_likes_comments.sql` | `photo_likes`, `photo_comments` |
+| `011_add_indexes.sql` | public feed index on `photos` |
+| `012_add_media_lookup_indexes.sql` | filename/thumbnail indexes for the media route |
 
 Core `photos` columns: `zone`, `analog_gallery_id`/`digital_gallery_id`, `filename`, `thumbnail`,
 `width`, `height`, `duration`, `media_type`, `exif_json`, `is_public`, `caption`, `sort_order`,
@@ -141,9 +147,14 @@ Core `photos` columns: `zone`, `analog_gallery_id`/`digital_gallery_id`, `filena
 All responses are JSON; errors are `{ error, code }`. Middleware: `verifyJWT`, `requireApproved`,
 `requireFamily`, `requireAdmin`.
 
-**Auth** — `POST /api/auth/firebase`
+**Auth** — `POST /api/auth/firebase` (also sets an HttpOnly media cookie scoped to `/uploads`),
+`POST /api/auth/logout` (clears it)
 
 **Public** — `GET /api/photos` (paginated feed), `GET /api/photos/:id`
+
+**Media** — `GET /uploads/full/:file`, `GET /uploads/thumbs/:file` — authenticated per photo:
+public-feed files are open; gated analog/digital files require the same role/group access as
+their JSON routes. `<img>`/`<video>` tags authenticate via the login cookie.
 
 **Analog** (GET: `requireApproved`, filtered for friends; writes: `requireAdmin`)
 `GET/POST /api/analog/galleries`, `GET/PUT/DELETE /api/analog/galleries/:id`,
@@ -171,7 +182,7 @@ enderthoughts/
 ├── deploy.sh                 # validate .env → build (amd64) → compose up
 ├── .env.example
 ├── SETUP.md                  # full setup & deployment guide
-├── db/migrations/            # 001–009, auto-applied on boot
+├── db/migrations/            # 001–012, auto-applied on boot
 ├── api/
 │   ├── Dockerfile
 │   └── src/

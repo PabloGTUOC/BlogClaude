@@ -11,7 +11,7 @@ Files reviewed: `docker-compose.yml`, `deploy.sh`, `api/Dockerfile`, `frontend/D
 
 ## P1 — do first (low risk, one is a latent build-breaker)
 
-### 1. Add `.dockerignore` files
+### 1. Add `.dockerignore` files ✅ *done (2026-07-02, with the CI workflow)*
 **Why:** `frontend/Dockerfile` does `RUN npm ci` then `COPY . .` with no `.dockerignore`.
 `frontend/` has local `node_modules` (macOS/arm64) + `dist`, so the build context copies the
 wrong-arch `node_modules` over the freshly-installed linux one → `npm run build` fails on

@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import { computed, watch, onMounted, onUnmounted } from 'vue';
+import { computed, watch, onUnmounted } from 'vue';
 import TagBadge from './TagBadge.vue';
 import PhotoInteractions from './PhotoInteractions.vue';
 

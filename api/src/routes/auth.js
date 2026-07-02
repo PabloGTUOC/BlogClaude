@@ -4,7 +4,16 @@ const jwt = require('jsonwebtoken');
 const { verifyIdToken } = require('../services/firebase');
 const { sendAdminNotification } = require('../services/mailer');
 const db = require('../db');
-const { JWT_SECRET } = require('../middleware/auth');
+const { JWT_SECRET, MEDIA_COOKIE } = require('../middleware/auth');
+
+// Cookie scoped to /uploads only: it exists solely so <img>/<video> tags can
+// authenticate against the gated media route (they can't send Bearer headers).
+const MEDIA_COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+  path: '/uploads'
+};
 
 router.post('/firebase', async (req, res) => {
   const { firebaseToken } = req.body;
@@ -64,6 +73,7 @@ router.post('/firebase', async (req, res) => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
+    res.cookie(MEDIA_COOKIE, token, { ...MEDIA_COOKIE_OPTS, maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({
       token,
       user: {
@@ -80,6 +90,13 @@ router.post('/firebase', async (req, res) => {
     console.error('Firebase Auth Error:', error);
     res.status(401).json({ error: 'Authentication failed: ' + error.message, code: 'AUTH_FAILED' });
   }
+});
+
+// POST /api/auth/logout - Clear the media cookie (the Bearer token lives in the
+// frontend's localStorage; dropping it is the client's job).
+router.post('/logout', (req, res) => {
+  res.clearCookie(MEDIA_COOKIE, MEDIA_COOKIE_OPTS);
+  res.json({ message: 'Logged out' });
 });
 
 module.exports = router;

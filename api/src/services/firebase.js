@@ -19,8 +19,18 @@ if (serviceAccountPath && fs.existsSync(serviceAccountPath)) {
 }
 
 if (!firebaseApp) {
-  isMock = true;
-  console.warn('Firebase Service Account JSON not found or failed to load. Running in MOCK AUTH MODE (for local development only).');
+  // Mock auth accepts ANY token as a valid login, so it must never be reachable by
+  // misconfiguration alone — it requires an explicit opt-in and a non-production env.
+  if (process.env.ALLOW_MOCK_AUTH === 'true' && process.env.NODE_ENV !== 'production') {
+    isMock = true;
+    console.warn('ALLOW_MOCK_AUTH is set — running in MOCK AUTH MODE (any token logs in). Local development only.');
+  } else {
+    console.error(
+      'FATAL: Firebase Admin SDK could not be initialized (FIREBASE_SERVICE_ACCOUNT_PATH missing or invalid). ' +
+      'Refusing to start without verifiable authentication. Set ALLOW_MOCK_AUTH=true for local development only.'
+    );
+    process.exit(1);
+  }
 }
 
 async function verifyIdToken(token) {
