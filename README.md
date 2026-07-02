@@ -90,10 +90,13 @@ Every upload (analog/digital, direct or Google Photos):
 
 - **Images** → `sharp`: full image (max 5000px long edge, JPEG q92, 4:4:4) + thumbnail (max 900px,
   q88); EXIF extracted with `exifr`. Stored under `UPLOAD_PATH/full` and `UPLOAD_PATH/thumbs`.
-- **Videos** → stored as-is; `ffmpeg`/`ffprobe` (bundled, static binaries) extract a poster-frame
-  thumbnail plus dimensions and duration. Rendered with a `<video>` player in the lightbox and a
-  play badge + duration on cards.
-- Accepts `image/*` and `video/*`, up to **200 MB** per file.
+- **Videos** → probed with `ffprobe` and stored as browser-playable MP4: H.264/AAC sources in an
+  MP4 container are kept untouched, H.264 in the wrong container (e.g. iPhone `.mov`) is remuxed
+  (fast, no re-encode), and anything else (HEVC, legacy codecs) is transcoded to H.264/AAC.
+  `ffmpeg` extracts a poster-frame thumbnail plus dimensions and duration. Rendered with a
+  `<video>` player in the lightbox and a play badge + duration on cards.
+- Accepts `image/*` and `video/*`, up to **200 MB** per file. Incoming files are staged on disk
+  (`UPLOAD_PATH/tmp`), not in memory, and cleaned up after processing.
 
 The `photos` table tracks `media_type` (`image` | `video`) and `duration`.
 
@@ -129,6 +132,8 @@ Migrations live in `db/migrations/` and run **automatically on API boot**
 | `007_add_gallery_published_and_in_gallery.sql` | `is_published`, `in_gallery` |
 | `008_user_roles_and_groups.sql` | role enum → `admin/family/friend/user`, `group` column |
 | `009_add_media_type_to_photos.sql` | `media_type`, `duration` |
+| `010_add_likes_comments.sql` | `photo_likes`, `photo_comments` |
+| `011_add_indexes.sql` | public feed index on `photos` |
 
 Core `photos` columns: `zone`, `analog_gallery_id`/`digital_gallery_id`, `filename`, `thumbnail`,
 `width`, `height`, `duration`, `media_type`, `exif_json`, `is_public`, `caption`, `sort_order`,
@@ -171,7 +176,7 @@ enderthoughts/
 ├── deploy.sh                 # validate .env → build (amd64) → compose up
 ├── .env.example
 ├── SETUP.md                  # full setup & deployment guide
-├── db/migrations/            # 001–009, auto-applied on boot
+├── db/migrations/            # 001–011, auto-applied on boot
 ├── api/
 │   ├── Dockerfile
 │   └── src/

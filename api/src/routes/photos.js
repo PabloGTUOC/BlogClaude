@@ -53,8 +53,10 @@ const engagementSelect = `
 
 // GET /api/photos - Paginated public feed
 router.get('/', optionalAuth, async (req, res) => {
-  const page = parseInt(req.query.page || '1', 10);
-  const limit = parseInt(req.query.limit || '12', 10);
+  // Clamp: page 0/negative would produce a negative OFFSET (SQL error), limit 0
+  // makes pages Infinity, and an unbounded limit dumps the whole table.
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 12));
   const offset = (page - 1) * limit;
   const uid = req.user?.id || 0;
 

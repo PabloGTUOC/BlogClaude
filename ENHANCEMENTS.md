@@ -96,7 +96,11 @@ the identity.
 
 ## P1 — Correctness & robustness
 
-### 8. 200 MB uploads are buffered fully in RAM
+> **Status:** all P1 items were implemented on this branch (2026-07-02): #8–#12 as code
+> changes, #13 as the documented single-instance constraint.
+
+
+### 8. 200 MB uploads are buffered fully in RAM ✅ *implemented*
 `api/src/middleware/upload.js:4` uses `multer.memoryStorage()` with a 200 MB limit and up to 12
 files per request — a single import batch can try to hold >2 GB in the Node heap and OOM the
 container. Videos are then written back out as-is anyway (`video.js:41`).
@@ -105,30 +109,30 @@ container. Videos are then written back out as-is anyway (`video.js:41`).
 buffers into `processUpload`/`processVideo` (sharp and ffmpeg both accept paths), and delete the
 temp file in a `finally`.
 
-### 9. Unvalidated pagination params
+### 9. Unvalidated pagination params ✅ *implemented*
 `api/src/routes/photos.js:31-33` — `?limit=0` yields `pages: Infinity`, `?page=0` a negative
 offset (MySQL error → 500), `?limit=100000` dumps the table. Clamp: `page ≥ 1`,
 `1 ≤ limit ≤ 50`.
 
-### 10. Missing existence / affectedRows checks
+### 10. Missing existence / affectedRows checks ✅ *implemented*
 - `digital.js` `POST /galleries/:id/photos` never checks the gallery exists → FK violation
   surfaces as a 500 instead of a 404, *after* files were already written to disk.
 - `analog.js` `PUT /galleries/:id` ignores `affectedRows` → updating a nonexistent gallery
   returns "updated successfully".
 
-### 11. Video files are stored as-is, so playback is codec roulette
+### 11. Video files are stored as-is, so playback is codec roulette ✅ *implemented*
 `video.js:41` stores the original container/codec untouched. iPhone HEVC `.mov` files won't play
 in Chrome/Firefox `<video>` tags. Since ffmpeg is already bundled, transcode non-H.264 sources
 to H.264/AAC MP4 (or at minimum probe the codec and warn the uploader). This is the most likely
 "my video doesn't play for grandma" bug report.
 
-### 12. Feed query indexes
+### 12. Feed query indexes ✅ *implemented (`011_add_indexes.sql`)*
 The public feed filters `WHERE is_public = TRUE ORDER BY sort_order, published_at DESC` with
 per-row correlated subqueries for likes/comments. Fine at hundreds of photos, but a
 `011_add_indexes.sql` adding `INDEX idx_photos_public_feed (is_public, sort_order, published_at)`
 is cheap insurance and follows the existing migration pattern.
 
-### 13. In-memory OAuth/import sessions
+### 13. In-memory OAuth/import sessions ✅ *constraint documented*
 `digital.js:16-18` — documented single-instance behavior, fine for this deployment. Worth a
 code comment noting the constraint; not worth Redis.
 

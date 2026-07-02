@@ -228,6 +228,14 @@ router.put('/galleries/:id', verifyJWT, requireAdmin, async (req, res) => {
   try {
     await connection.beginTransaction();
 
+    // affectedRows can't distinguish "no such gallery" from "no values changed",
+    // so check existence explicitly instead of reporting a phantom success.
+    const [existing] = await connection.query('SELECT id FROM analog_galleries WHERE id = ?', [galleryId]);
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+    }
+
     await connection.query(
       'UPDATE analog_galleries SET title = ?, camera = ?, film_stock = ?, month = ?, year = ?, notes = ? WHERE id = ?',
       [title, camera, film_stock, month, year, notes || null, galleryId]
@@ -301,8 +309,15 @@ router.post('/galleries/:id/photos', verifyJWT, requireAdmin, upload.array('phot
 
   const results = [];
   try {
+    // Validate the target before processing anything, so a bad gallery id is a
+    // clean 404 instead of an FK-violation 500 after files hit the disk.
+    const galleryRows = await db.query('SELECT id FROM analog_galleries WHERE id = ?', [galleryId]);
+    if (galleryRows.length === 0) {
+      return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+    }
+
     for (const file of req.files) {
-      const processed = await processUpload(file.buffer, file.originalname);
+      const processed = await processUpload(file.path, file.originalname);
 
       const [insertResult] = await db.pool.query(
         `INSERT INTO photos (zone, analog_gallery_id, filename, thumbnail, width, height, exif_json, uploaded_by) 
@@ -329,6 +344,8 @@ router.post('/galleries/:id/photos', verifyJWT, requireAdmin, upload.array('phot
   } catch (error) {
     console.error('Error uploading analog photos:', error);
     res.status(500).json({ error: 'Failed to process and upload photos: ' + error.message, code: 'UPLOAD_FAILED' });
+  } finally {
+    upload.cleanupFiles(req.files);
   }
 });
 
