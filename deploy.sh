@@ -28,11 +28,19 @@ set +a
 
 # Fail fast if any deploy-critical variable is missing.
 : "${DB_PASS:?DB_PASS missing in .env}"
+: "${DB_APP_PASS:?DB_APP_PASS missing in .env (least-privilege DB user password)}"
 : "${JWT_SECRET:?JWT_SECRET missing in .env}"
 : "${UPLOAD_PATH:?UPLOAD_PATH missing in .env}"
 : "${VITE_GOOGLE_CLIENT_ID:?VITE_GOOGLE_CLIENT_ID missing in .env}"
 : "${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET missing in .env}"
 : "${API_ORIGIN:?API_ORIGIN missing in .env}"
+: "${FRONTEND_ORIGIN:?FRONTEND_ORIGIN missing in .env}"
+# Frontend build args — a missing value bakes a broken bundle without any build error.
+: "${VITE_API_BASE_URL:?VITE_API_BASE_URL missing in .env}"
+: "${VITE_FIREBASE_API_KEY:?VITE_FIREBASE_API_KEY missing in .env}"
+: "${VITE_FIREBASE_AUTH_DOMAIN:?VITE_FIREBASE_AUTH_DOMAIN missing in .env}"
+: "${VITE_FIREBASE_PROJECT_ID:?VITE_FIREBASE_PROJECT_ID missing in .env}"
+: "${VITE_FIREBASE_APP_ID:?VITE_FIREBASE_APP_ID missing in .env}"
 
 # Ensure the host upload directory exists (bind-mounted into the api container).
 mkdir -p "${UPLOAD_PATH}/full" "${UPLOAD_PATH}/thumbs"
@@ -44,7 +52,7 @@ mkdir -p "${UPLOAD_PATH}/full" "${UPLOAD_PATH}/thumbs"
 # The api image downloads the bundled ffmpeg/ffprobe binaries during npm install.
 # ------------------------------------------------------------
 echo "=== STEP 1: BUILDING IMAGES (linux/amd64) ==="
-docker compose build
+docker compose build --pull
 
 # ------------------------------------------------------------
 # STEP 2: SHUT DOWN ANY RUNNING STACK

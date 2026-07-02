@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
@@ -9,10 +7,20 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS}
       MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "3306:3306"
+      # Least-privilege app user, auto-created WITH FULL GRANTS ON ${DB_NAME}
+      # on a FRESH data volume only. For an existing mysql-data volume, create
+      # it manually (see SETUP.md / deploy notes).
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_APP_PASS}
+    # No published ports: only the api reaches the DB, over the compose network.
+    # For host debugging, temporarily add: ports: ["127.0.0.1:3306:3306"]
     volumes:
       - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
     build:
@@ -27,7 +35,7 @@ services:
       DB_PORT: 3306
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
+      DB_APP_PASS: ${DB_APP_PASS}  # app-user password; root's DB_PASS never enters this container
       JWT_SECRET: ${JWT_SECRET}
       FIREBASE_SERVICE_ACCOUNT_PATH: /app/firebase-service-account.json
       UPLOAD_PATH: /app/uploads
@@ -44,7 +52,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy  # wait for MySQL readiness, not just container start
     volumes:
       - ${UPLOAD_PATH}:/app/uploads
       - ${FIREBASE_SERVICE_ACCOUNT_PATH:-/dev/null}:/app/firebase-service-account.json:ro

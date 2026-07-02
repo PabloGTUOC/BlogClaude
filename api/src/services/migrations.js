@@ -17,7 +17,8 @@ async function runMigrations() {
     port: parseInt(process.env.DB_PORT || '3306', 10),
     database: process.env.DB_NAME || 'enderthoughts',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS || '',
+    // Same credential resolution as db.js: app password first, root as legacy fallback.
+    password: process.env.DB_APP_PASS || process.env.DB_PASS || '',
     multipleStatements: true
   });
 

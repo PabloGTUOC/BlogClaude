@@ -195,12 +195,14 @@ service-account JSON present at `FIREBASE_SERVICE_ACCOUNT_PATH`.
 ```
 
 `deploy.sh`:
-- Validates that `.env` exists and required variables are set.
+- Validates that `.env` exists and required variables are set (including the `VITE_*`
+  frontend build args — a missing one would silently bake a broken bundle).
 - Ensures the host `UPLOAD_PATH` (with `full/`, `thumbs/`) exists.
 - Builds the API and frontend images for **linux/amd64** (pinned in the Dockerfiles), passing
   `VITE_*` values as build args so they're baked into the frontend bundle.
 - Runs `docker compose down` then `docker compose up -d`.
-- DB migrations run automatically on API boot.
+- The api waits for the MySQL healthcheck before starting; DB migrations then run
+  automatically on API boot.
 
 Default published ports:
 
@@ -208,7 +210,33 @@ Default published ports:
 |---|---|
 | frontend (nginx) | `8080` |
 | api | `3000` |
-| db (mysql) | `3306` |
+| db (mysql) | *not published* — reachable only by the api over the compose network |
+
+### 8.1 Database users
+
+The app never connects as MySQL `root`. Two credentials live in `.env`:
+
+- `DB_PASS` — the container's root password (admin/backups only).
+- `DB_USER` / `DB_APP_PASS` — the least-privilege account the API uses
+  (granted on `DB_NAME` only). `DB_USER` must not be `root`.
+
+On a **fresh** `mysql-data` volume the app user is created automatically
+(`MYSQL_USER`/`MYSQL_PASSWORD` in compose). On an **existing** volume the mysql
+image ignores those variables — create the user manually once:
+
+```sql
+CREATE USER IF NOT EXISTS 'enderthoughts'@'%' IDENTIFIED BY '<DB_APP_PASS>';
+GRANT ALL PRIVILEGES ON enderthoughts.* TO 'enderthoughts'@'%';
+FLUSH PRIVILEGES;
+```
+
+### 8.2 Runtime hardening (already wired in)
+
+- api container runs as the non-root `node` user (uid 1000 — keep the host
+  `UPLOAD_PATH` owned by the deploy user so it stays writable).
+- api image has a `HEALTHCHECK` against `/health`.
+- frontend nginx serves `index.html` with `no-cache` (hashed assets cache 1y),
+  gzip, and `nosniff`/referrer-policy headers.
 
 > For production, remember to set `API_ORIGIN` to your real API host and register the matching
 > `…/api/digital/google-photos/callback` redirect URI in Google Cloud Console (section 2.3).

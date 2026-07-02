@@ -186,6 +186,24 @@ with npm workspaces if a root manifest is wanted.
 anything in the repo. A documented `mysqldump` + uploads rsync cron (even just in SETUP.md)
 turns "the disk died" from catastrophe into inconvenience.
 
+### 20. Docker/deploy review ✅ *applied 2026-07-02 (was `deploy_pending.MD`)*
+All P1/P2 items landed: `.dockerignore`s, MySQL unpublished from the host, least-privilege
+DB user (`DB_USER`/`DB_APP_PASS`, see SETUP.md §8.1), DB healthcheck gating api startup,
+non-root api container (`node` uid 1000), toolchain-free api image, nginx hardening
+(no-cache shell, gzip, nosniff/referrer headers), api `HEALTHCHECK`, deploy.sh validation
+of all `VITE_*` build args + `docker compose build --pull`. Three items consciously deferred:
+
+- **Pin base images by digest** — `node:20-slim` / `nginx:stable-alpine` / `mysql:8.0` float.
+  Skipped: digest pins block security patches unless refreshed by tooling (renovate); for a
+  single-host family app, floating minor tags are the better trade-off.
+- **Bind published ports to `127.0.0.1`** — depends on whether Nginx Proxy Manager runs as a
+  container (reaches services over the docker network → safe to bind) or on the host. Decide
+  on the box at first deploy: if NPM is containerized, change to `"127.0.0.1:3000:3000"` /
+  `"127.0.0.1:8080:80"` and attach NPM to the compose network.
+- **Ignore `uploads/` wholesale in git** — NOT applied: 43 real content photos are
+  intentionally tracked. If the repo should stop carrying content, that's a separate
+  decision (untrack + rely on host backups, SETUP.md §7).
+
 ---
 
 ## P3 — Product enhancements (aligned with PRODUCT.md)
@@ -219,4 +237,4 @@ turns "the disk died" from catastrophe into inconvenience.
 4. **P2 #14–#16** (tests + CI + lint) so everything after this has a safety net.
 5. **P0 #4 step 2** (authenticated media route) — the largest single change, best done with
    tests in place.
-6. `deploy_pending.MD` batch, then P1 #11/#12 and P3 as appetite allows.
+6. Docker/deploy batch (#20 — done), then P1 #11/#12 and P3 as appetite allows.
