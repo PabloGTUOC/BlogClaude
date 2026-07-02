@@ -34,6 +34,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     logout() {
+      // Fire-and-forget: clears the HttpOnly media cookie server-side
+      api.post('/auth/logout').catch(() => {});
       this.token = null;
       this.user = null;
       localStorage.removeItem('token');

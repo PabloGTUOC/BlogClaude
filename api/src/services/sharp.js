@@ -15,7 +15,7 @@ fs.mkdirSync(thumbsDir, { recursive: true });
 
 // `input` may be a file path (disk-based multer uploads) or a Buffer
 // (Google Photos imports) — sharp and exifr accept both natively.
-async function processUpload(input, originalName) {
+async function processUpload(input, _originalName) {
   // 1. Extract EXIF
   let exif = null;
   try {

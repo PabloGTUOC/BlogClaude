@@ -189,23 +189,19 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useDigitalStore } from '@/stores/digital';
 import { useAuthStore } from '@/stores/auth';
 import { useUiStore } from '@/stores/ui';
-import GalleryMeta from '@/components/GalleryMeta.vue';
 import PhotoCard from '@/components/PhotoCard.vue';
-import PhotoGrid from '@/components/PhotoGrid.vue';
 import UploadZone from '@/components/UploadZone.vue';
 import Lightbox from '@/components/Lightbox.vue';
 
 export default {
   name: 'DigitalMonthlyGallery',
   components: {
-    GalleryMeta,
     PhotoCard,
-    PhotoGrid,
     UploadZone,
     Lightbox
   },

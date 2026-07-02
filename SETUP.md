@@ -213,3 +213,41 @@ Default published ports:
 > For production, remember to set `API_ORIGIN` to your real API host and register the matching
 > `…/api/digital/google-photos/callback` redirect URI in Google Cloud Console (section 2.3).
 > Tail logs with `docker compose logs -f api`.
+
+---
+
+## 7. Backups
+
+The family archive lives in exactly two places — the MySQL data volume and the uploads
+directory. Neither survives a dead disk without backups. Minimum viable setup on the host:
+
+```bash
+# /etc/cron.d/enderthoughts-backup — daily at 03:30, keep 14 days
+30 3 * * * root /srv/enderthoughts/backup.sh
+```
+
+`backup.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+BACKUP_DIR=/srv/enderthoughts/backups
+STAMP=$(date +%F)
+mkdir -p "$BACKUP_DIR"
+
+# 1. Database dump (through the running container; uses .env credentials)
+docker exec enderthoughts-db sh -c 'exec mysqldump --single-transaction -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' \
+  | gzip > "$BACKUP_DIR/db-$STAMP.sql.gz"
+
+# 2. Uploads (originals + thumbnails; tmp/ is transient staging and excluded)
+tar --exclude='tmp' -czf "$BACKUP_DIR/uploads-$STAMP.tar.gz" -C "$(dirname "$UPLOAD_PATH")" "$(basename "$UPLOAD_PATH")"
+
+# 3. Retention: drop anything older than 14 days
+find "$BACKUP_DIR" -name '*.gz' -mtime +14 -delete
+```
+
+Copy the backup directory somewhere off the machine (rsync to another box, rclone to cloud
+storage, or an external drive) — an on-host backup only protects against mistakes, not
+hardware failure. Test a restore once: `gunzip < db-DATE.sql.gz | docker exec -i
+enderthoughts-db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"` plus untarring
+uploads back into `UPLOAD_PATH`.

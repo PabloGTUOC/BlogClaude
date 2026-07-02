@@ -7,6 +7,22 @@ if (!JWT_SECRET) {
   process.exit(1);
 }
 
+// HttpOnly cookie carrying the session JWT, scoped to /uploads. <img>/<video>
+// tags can't send Authorization headers, so gated media auths via this cookie
+// (frontend and API are same-site in both dev and production).
+const MEDIA_COOKIE = 'enderthoughts_media';
+
+function extractToken(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
+  }
+  if (req.cookies && req.cookies[MEDIA_COOKIE]) {
+    return req.cookies[MEDIA_COOKIE];
+  }
+  return null;
+}
+
 // Role/status/group are re-read from the DB on every request so revocations and
 // role changes take effect immediately instead of when the 7-day token expires.
 async function loadFreshUser(decoded) {
@@ -18,12 +34,10 @@ async function loadFreshUser(decoded) {
 }
 
 async function verifyJWT(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = extractToken(req);
+  if (!token) {
     return res.status(401).json({ error: 'Access token required', code: 'AUTH_REQUIRED' });
   }
-
-  const token = authHeader.split(' ')[1];
 
   let decoded;
   try {
@@ -51,10 +65,10 @@ async function verifyJWT(req, res, next) {
 // Attaches req.user when a valid token is present, but never rejects — for public routes
 // whose response varies by viewer (liked_by_me, private photo detail, EXIF visibility).
 async function optionalAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  const token = extractToken(req);
+  if (token) {
     try {
-      const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+      const decoded = jwt.verify(token, JWT_SECRET);
       const user = await loadFreshUser(decoded);
       if (user && user.status !== 'revoked') {
         req.user = user;
@@ -112,5 +126,6 @@ module.exports = {
   requireApproved,
   requireFamily,
   requireAdmin,
-  JWT_SECRET
+  JWT_SECRET,
+  MEDIA_COOKIE
 };

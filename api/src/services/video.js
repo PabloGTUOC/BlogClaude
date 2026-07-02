@@ -123,7 +123,7 @@ async function processVideo(input, originalName) {
       } catch (err) {
         // Clean up a half-written output before propagating
         fs.rm(videoFullPath, { force: true }, () => {});
-        throw new Error(`Video conversion failed: ${err.message}`);
+        throw new Error(`Video conversion failed: ${err.message}`, { cause: err });
       }
 
       fs.unlink(inputPath, () => {});

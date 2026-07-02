@@ -9,9 +9,9 @@ here — that list still stands and its P1 (`.dockerignore`) is still the first 
 
 ## P0 — Security (fix first)
 
-> **Status:** #1–#3, #4 step 1, #5, #6 and the #7 batch were implemented on this branch
-> (2026-07-02). #4 step 2 (authenticated media route) remains open — best done once the
-> P2 test suite exists.
+> **Status:** all P0 items are implemented on this branch (2026-07-02), including the
+> #4 step 2 authenticated media route (`api/src/routes/media.js`, cookie-based auth for
+> `<img>`/`<video>` tags, access matrix pinned by `api/test/media.routes.test.js`).
 
 ### 1. Mock auth fails open in production ✅ *implemented*
 `api/src/services/firebase.js:21-24` — if `FIREBASE_SERVICE_ACCOUNT_PATH` is missing *or the
@@ -49,7 +49,7 @@ revoke someone is exactly when you want it to bite immediately.
   and overwrite the token claims. At this app's traffic level the extra query is negligible.
 - Alternative: keep claims but add a `token_version` column bumped on revoke/role change.
 
-### 4. Private photos are publicly fetchable by URL ⚠️ *step 1 implemented; step 2 open*
+### 4. Private photos are publicly fetchable by URL ✅ *implemented (both steps)*
 `api/src/index.js:33` serves the entire uploads tree statically with no auth, and filenames are
 guessable: `Date.now()_<originalname>.jpg` (`api/src/services/sharp.js:30-32`,
 `video.js:29-35`). Every "gated" analog/digital photo is retrievable by anyone who can iterate
@@ -140,7 +140,12 @@ code comment noting the constraint; not worth Redis.
 
 ## P2 — Engineering infrastructure (currently zero)
 
-### 14. Tests — start with the access-control matrix
+> **Status:** all P2 items were implemented on this branch (2026-07-02): vitest suite
+> (57 tests incl. the access matrix), GitHub Actions CI, ESLint for both packages,
+> CLAUDE.md, root package.json removed, backup runbook in SETUP.md §7.
+
+
+### 14. Tests — start with the access-control matrix ✅ *implemented*
 There are no tests at all, yet the app's whole value is its permission model, which is also
 what keeps regressing across sessions (see `Session.MD`). The highest-yield first test suite is
 an integration matrix over the auth rules using `supertest` + `vitest` and a throwaway MySQL
@@ -155,28 +160,28 @@ an integration matrix over the auth rules using `supertest` + `vitest` and a thr
 
 Mock-auth mode (#1) becomes genuinely useful here as the test-mode login path.
 
-### 15. CI — GitHub Actions
+### 15. CI — GitHub Actions ✅ *implemented*
 No `.github/workflows`. A single workflow that runs lint + the test suite + `docker compose
 build` on PRs would have caught several of the "fixed this session" items in `Session.MD`
 (the nodemon-crashing template literal, the reserved-word 500) before they reached deploy.
 
-### 16. ESLint + Prettier
+### 16. ESLint + Prettier ✅ *ESLint implemented (Prettier skipped to avoid a mass reformat)*
 No lint config in either package. `eslint` + `eslint-plugin-vue` on the frontend and a basic
 node config on the API, wired into CI. Keeps multi-session/AI-assisted edits stylistically
 convergent.
 
-### 17. CLAUDE.md
+### 17. CLAUDE.md ✅ *implemented*
 This repo is developed session-by-session with AI assistance (`Session.MD`, `.impeccable/`),
 but has no `CLAUDE.md`. Distill the stable facts — stack, run commands, migration convention,
 the role/group access rules, "never restyle the CRT identity" — so every session starts with
 the same context instead of re-deriving it from README/Session notes.
 
-### 18. Root `package.json` is an accident
+### 18. Root `package.json` is an accident ✅ *removed*
 The root `package.json`/`package-lock.json` contain a single stray `firebase@^12` dependency —
 nothing in the repo uses it (frontend has its own `firebase@^10`). Delete both files, or replace
 with npm workspaces if a root manifest is wanted.
 
-### 19. Backup story
+### 19. Backup story ✅ *documented (SETUP.md §7)*
 `mysql-data` volume + the uploads bind mount are the family archive; neither is backed up by
 anything in the repo. A documented `mysqldump` + uploads rsync cron (even just in SETUP.md)
 turns "the disk died" from catastrophe into inconvenience.

@@ -134,6 +134,7 @@ Migrations live in `db/migrations/` and run **automatically on API boot**
 | `009_add_media_type_to_photos.sql` | `media_type`, `duration` |
 | `010_add_likes_comments.sql` | `photo_likes`, `photo_comments` |
 | `011_add_indexes.sql` | public feed index on `photos` |
+| `012_add_media_lookup_indexes.sql` | filename/thumbnail indexes for the media route |
 
 Core `photos` columns: `zone`, `analog_gallery_id`/`digital_gallery_id`, `filename`, `thumbnail`,
 `width`, `height`, `duration`, `media_type`, `exif_json`, `is_public`, `caption`, `sort_order`,
@@ -146,9 +147,14 @@ Core `photos` columns: `zone`, `analog_gallery_id`/`digital_gallery_id`, `filena
 All responses are JSON; errors are `{ error, code }`. Middleware: `verifyJWT`, `requireApproved`,
 `requireFamily`, `requireAdmin`.
 
-**Auth** — `POST /api/auth/firebase`
+**Auth** — `POST /api/auth/firebase` (also sets an HttpOnly media cookie scoped to `/uploads`),
+`POST /api/auth/logout` (clears it)
 
 **Public** — `GET /api/photos` (paginated feed), `GET /api/photos/:id`
+
+**Media** — `GET /uploads/full/:file`, `GET /uploads/thumbs/:file` — authenticated per photo:
+public-feed files are open; gated analog/digital files require the same role/group access as
+their JSON routes. `<img>`/`<video>` tags authenticate via the login cookie.
 
 **Analog** (GET: `requireApproved`, filtered for friends; writes: `requireAdmin`)
 `GET/POST /api/analog/galleries`, `GET/PUT/DELETE /api/analog/galleries/:id`,
@@ -176,7 +182,7 @@ enderthoughts/
 ├── deploy.sh                 # validate .env → build (amd64) → compose up
 ├── .env.example
 ├── SETUP.md                  # full setup & deployment guide
-├── db/migrations/            # 001–011, auto-applied on boot
+├── db/migrations/            # 001–012, auto-applied on boot
 ├── api/
 │   ├── Dockerfile
 │   └── src/
