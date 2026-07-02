@@ -204,13 +204,28 @@ service-account JSON present at `FIREBASE_SERVICE_ACCOUNT_PATH`.
 - The api waits for the MySQL healthcheck before starting; DB migrations then run
   automatically on API boot.
 
-Default published ports:
+Default published ports (single-origin deployment):
 
 | Service | Port |
 |---|---|
-| frontend (nginx) | `8080` |
-| api | `3000` |
+| frontend (nginx) | `8080` — the ONLY published port; it proxies `/api` + `/uploads` to the api container |
+| api | *not published* — reached via the frontend nginx over the compose network |
 | db (mysql) | *not published* — reachable only by the api over the compose network |
+
+The upstream reverse proxy (NAS nginx / NPM) therefore needs exactly one route:
+the public hostname → `<box-ip>:8080`. It MUST also allow large request bodies
+(photo/video uploads go through it):
+
+```nginx
+location / {
+    proxy_pass http://192.168.50.210:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 220m;   # uploads up to 200MB pass through here
+    proxy_read_timeout 300s;     # gallery zip downloads
+}
+```
 
 ### 8.1 Database users
 

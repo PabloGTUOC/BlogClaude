@@ -49,8 +49,9 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
-    ports:
-      - "3000:3000"
+    # No published ports: the frontend nginx proxies /api and /uploads to this
+    # container over the compose network (single-origin deployment).
+    # For host debugging, temporarily add: ports: ["127.0.0.1:3000:3000"]
     depends_on:
       db:
         condition: service_healthy  # wait for MySQL readiness, not just container start
