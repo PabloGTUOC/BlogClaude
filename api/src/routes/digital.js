@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const db = require('../db');
-const { verifyJWT, requireApproved, requireFamily } = require('../middleware/auth');
+const { verifyJWT, requireFamily } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { processUpload } = require('../services/sharp');
 const { processVideo } = require('../services/video');
@@ -35,7 +35,7 @@ function deletePhotoFiles(photo) {
 
 // GET /api/digital/google-photos/oauth-url
 // Returns a one-time Google OAuth URL + sessionId. Frontend opens this URL in a popup.
-router.get('/google-photos/oauth-url', verifyJWT, (req, res) => {
+router.get('/google-photos/oauth-url', verifyJWT, requireFamily, (req, res) => {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientSecret) {
     return res.status(500).json({ error: 'Google client secret not configured', code: 'CONFIG_ERROR' });
@@ -150,7 +150,7 @@ router.get('/google-photos/picker-done', (req, res) => {
 //   'pending'  — waiting for OAuth callback
 //   'picking'  — OAuth done, user is selecting in Google's picker popup
 //   'done'     — items selected, returned to frontend
-router.get('/google-photos/poll/:sessionId', verifyJWT, async (req, res) => {
+router.get('/google-photos/poll/:sessionId', verifyJWT, requireFamily, async (req, res) => {
   const session = oauthSessions.get(req.params.sessionId);
   if (!session) {
     return res.status(404).json({ error: 'Session not found or expired', code: 'SESSION_NOT_FOUND' });

@@ -8,8 +8,9 @@ const pool = mysql.createPool({
   password: process.env.DB_PASS || '',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  multipleStatements: true
+  queueLimit: 0
+  // multipleStatements is deliberately OFF for the shared pool — only the
+  // migration runner needs it (it opens its own connection).
 });
 
 module.exports = {

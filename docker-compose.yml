@@ -21,6 +21,7 @@ services:
     container_name: enderthoughts-api
     restart: unless-stopped
     environment:
+      NODE_ENV: production  # hard-disables mock auth regardless of ALLOW_MOCK_AUTH
       PORT: 3000
       DB_HOST: db
       DB_PORT: 3306

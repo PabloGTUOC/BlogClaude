@@ -2,6 +2,7 @@ const sharp = require('sharp');
 const exifr = require('exifr');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads');
 
@@ -26,10 +27,9 @@ async function processUpload(fileBuffer, originalName) {
     console.warn('Could not parse EXIF data:', err.message);
   }
 
-  // Generate unique filename base
-  const timestamp = Date.now();
-  const sanitizedName = originalName.replace(/[^a-zA-Z0-9.]/g, '_');
-  const filenameBase = `${timestamp}_${path.parse(sanitizedName).name}.jpg`;
+  // Random filename: uploads are served statically, so names must be unguessable
+  // (timestamp + original name was enumerable). Also removes collision risk.
+  const filenameBase = `${crypto.randomBytes(16).toString('hex')}.jpg`;
 
   const fullPath = path.join(fullDir, filenameBase);
   const thumbPath = path.join(thumbsDir, filenameBase);

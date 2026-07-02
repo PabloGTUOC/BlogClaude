@@ -1,21 +1,46 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const db = require('../db');
-const jwt = require('jsonwebtoken');
-const { JWT_SECRET, verifyJWT, requireApproved } = require('../middleware/auth');
+const { verifyJWT, optionalAuth, requireApproved } = require('../middleware/auth');
 
-// Optional auth parsing for details
-function optionalAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    try {
-      req.user = jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-      // Ignore invalid tokens for optional auth
+// Caps like/comment writes per client — generous for humans, blocks flooding.
+const interactionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, slow down', code: 'RATE_LIMITED' }
+});
+
+// EXIF GPS fields pinpoint where a photo was taken (often the photographer's home).
+// Public/untrusted responses must never include them; the rest of the EXIF readout
+// (camera, film, exposure) stays — it's part of the identity.
+function stripGpsFromExif(exif) {
+  if (!exif) return exif;
+  const wasString = typeof exif === 'string';
+  let parsed;
+  try {
+    parsed = wasString ? JSON.parse(exif) : exif;
+  } catch (err) {
+    return null; // unparseable EXIF: fail closed rather than leak
+  }
+  if (!parsed || typeof parsed !== 'object') return exif;
+  for (const key of Object.keys(parsed)) {
+    if (key.startsWith('GPS') || key === 'latitude' || key === 'longitude') {
+      delete parsed[key];
     }
   }
-  next();
+  return wasString ? JSON.stringify(parsed) : parsed;
+}
+
+// Approved members and admins see full EXIF; anonymous and pending viewers don't get GPS.
+function sanitizeForViewer(photo, user) {
+  const trusted = user && (user.role === 'admin' || user.status === 'approved');
+  if (!trusted) {
+    photo.exif_json = stripGpsFromExif(photo.exif_json);
+  }
+  return photo;
 }
 
 // Reusable SQL fragment: like/comment counts + whether the requesting user liked it.
@@ -61,7 +86,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const [photos] = await db.pool.query(queryStr, [uid, limit, offset]);
 
     res.json({
-      photos,
+      photos: photos.map(p => sanitizeForViewer(p, req.user)),
       pagination: {
         page,
         limit,
@@ -115,7 +140,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
       }
     }
 
-    res.json(photo);
+    res.json(sanitizeForViewer(photo, req.user));
   } catch (error) {
     console.error('Error fetching photo detail:', error);
     res.status(500).json({ error: 'Failed to fetch photo detail', code: 'DATABASE_ERROR' });
@@ -129,7 +154,7 @@ async function loadInteractablePhoto(photoId) {
 }
 
 // POST /api/photos/:id/like - Toggle the requesting user's like
-router.post('/:id/like', verifyJWT, requireApproved, async (req, res) => {
+router.post('/:id/like', interactionLimiter, verifyJWT, requireApproved, async (req, res) => {
   const photoId = parseInt(req.params.id, 10);
 
   try {
@@ -193,7 +218,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
 });
 
 // POST /api/photos/:id/comments - Add a comment
-router.post('/:id/comments', verifyJWT, requireApproved, async (req, res) => {
+router.post('/:id/comments', interactionLimiter, verifyJWT, requireApproved, async (req, res) => {
   const photoId = parseInt(req.params.id, 10);
   const body = (req.body.body || '').trim();
 

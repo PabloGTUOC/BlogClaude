@@ -2,6 +2,8 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 
 const authRoutes = require('./routes/auth');
@@ -15,12 +17,31 @@ const adminUsersRoutes = require('./routes/admin/users');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enable CORS
+// Behind Cloudflare Tunnel / Nginx Proxy Manager — trust one proxy hop so
+// rate limiting keys on the real client IP from X-Forwarded-For.
+app.set('trust proxy', 1);
+
+// Cross-origin resource policy must stay open: the frontend is served from a
+// different origin and loads /uploads media via plain <img>/<video> tags.
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
+
+// CORS locked to the frontend origin (FRONTEND_ORIGIN, e.g. https://blog.enderthoughts.com)
 app.use(cors({
-  origin: '*', // In production, narrow this down to the frontend domain
+  origin: process.env.FRONTEND_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Login attempts are the brute-force surface — keep the window tight.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts, try again later', code: 'RATE_LIMITED' }
+});
 
 // Body parser
 app.use(express.json());
@@ -33,7 +54,7 @@ if (!fs.existsSync(uploadPath)) {
 app.use('/uploads', express.static(uploadPath));
 
 // API Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/photos', photosRoutes);
 app.use('/api/analog', analogRoutes);
 app.use('/api/digital', digitalRoutes);

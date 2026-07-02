@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
@@ -26,13 +27,13 @@ function probe(filePath) {
 
 // Processes a video upload: stores the video file as-is and extracts a poster-frame thumbnail.
 async function processVideo(fileBuffer, originalName) {
-  const timestamp = Date.now();
-  const sanitizedName = originalName.replace(/[^a-zA-Z0-9.]/g, '_');
-  const baseName = path.parse(sanitizedName).name;
-  const ext = (path.extname(sanitizedName) || '.mp4').toLowerCase();
+  // Random filename: uploads are served statically, so names must be unguessable
+  // (timestamp + original name was enumerable). Only the extension survives.
+  const token = crypto.randomBytes(16).toString('hex');
+  const ext = (path.extname(originalName).replace(/[^a-zA-Z0-9.]/g, '') || '.mp4').toLowerCase();
 
-  const videoFilename = `${timestamp}_${baseName}${ext}`;
-  const thumbFilename = `${timestamp}_${baseName}.jpg`;
+  const videoFilename = `${token}${ext}`;
+  const thumbFilename = `${token}.jpg`;
 
   const videoFullPath = path.join(fullDir, videoFilename);
   const thumbFullPath = path.join(thumbsDir, thumbFilename);

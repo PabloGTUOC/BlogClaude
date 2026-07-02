@@ -9,7 +9,11 @@ here — that list still stands and its P1 (`.dockerignore`) is still the first 
 
 ## P0 — Security (fix first)
 
-### 1. Mock auth fails open in production
+> **Status:** #1–#3, #4 step 1, #5, #6 and the #7 batch were implemented on this branch
+> (2026-07-02). #4 step 2 (authenticated media route) remains open — best done once the
+> P2 test suite exists.
+
+### 1. Mock auth fails open in production ✅ *implemented*
 `api/src/services/firebase.js:21-24` — if `FIREBASE_SERVICE_ACCOUNT_PATH` is missing *or the
 file fails to parse*, the API silently drops into MOCK AUTH MODE where **any string is accepted
 as a valid login token**. A production misconfiguration (bad mount, typo'd path — exactly the
@@ -29,12 +33,12 @@ if (!firebaseApp) {
 }
 ```
 
-### 2. Hardcoded JWT secret fallback
+### 2. Hardcoded JWT secret fallback ✅ *implemented*
 `api/src/middleware/auth.js:3` — `JWT_SECRET || 'enderthoughts_secret_key_1984'`. The fallback
 is in a public repo, so if `JWT_SECRET` is ever unset, anyone can forge an admin token. Same
 pattern as #1: fail fast at boot if `JWT_SECRET` is missing instead of falling back.
 
-### 3. Revoked users keep access for up to 7 days
+### 3. Revoked users keep access for up to 7 days ✅ *implemented*
 `api/src/routes/auth.js:65` bakes `role`/`status`/`group` into a 7-day JWT, and all middleware
 (`requireApproved`, `requireFamily`, `requireAdmin`) trusts the token payload. Revoking or
 demoting a user in Admin → Users does nothing until their token expires — the one moment you
@@ -45,7 +49,7 @@ revoke someone is exactly when you want it to bite immediately.
   and overwrite the token claims. At this app's traffic level the extra query is negligible.
 - Alternative: keep claims but add a `token_version` column bumped on revoke/role change.
 
-### 4. Private photos are publicly fetchable by URL
+### 4. Private photos are publicly fetchable by URL ⚠️ *step 1 implemented; step 2 open*
 `api/src/index.js:33` serves the entire uploads tree statically with no auth, and filenames are
 guessable: `Date.now()_<originalname>.jpg` (`api/src/services/sharp.js:30-32`,
 `video.js:29-35`). Every "gated" analog/digital photo is retrievable by anyone who can iterate
@@ -60,7 +64,7 @@ the biggest gap between promise and implementation.
    checks the photo's `is_public` / zone / group rules — the same logic the JSON routes already
    enforce. Public feed images can stay on the static path.
 
-### 5. CORS is `origin: '*'`
+### 5. CORS is `origin: '*'` ✅ *implemented*
 `api/src/index.js:19-23` — the comment even says to narrow it. `FRONTEND_ORIGIN` is already in
 the environment (compose passes it); use it:
 
@@ -68,7 +72,7 @@ the environment (compose passes it); use it:
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || '*', ... }));
 ```
 
-### 6. Public feed photos can leak GPS home coordinates
+### 6. Public feed photos can leak GPS home coordinates ✅ *implemented*
 `sharp.js:19-24` extracts EXIF **including GPS** and stores it verbatim; `GET /api/photos`
 returns `p.*` including `exif_json` to unauthenticated visitors. A photo taken at home and
 pushed to the public feed publishes the house's coordinates.
@@ -77,7 +81,7 @@ pushed to the public feed publishes the house's coordinates.
 (or at publish time). Keep full EXIF for logged-in zones — the camera/film readout is part of
 the identity.
 
-### 7. Smaller hardening items
+### 7. Smaller hardening items ✅ *implemented*
 - **Rate limiting** — nothing on `POST /api/auth/firebase` or the comment endpoints.
   `express-rate-limit` on auth + writes is a few lines.
 - **`helmet()`** on the API (skip CSP; the API only serves JSON + media).
