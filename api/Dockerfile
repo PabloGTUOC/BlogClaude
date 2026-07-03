@@ -1,18 +1,23 @@
+# Build context is the REPO ROOT (not api/): the image needs db/migrations,
+# which lives outside api/. See docker-compose.yml / deploy.sh.
 FROM --platform=linux/amd64 node:20-slim
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY api/package*.json ./
 
 # sharp 0.33 and ffmpeg-static/ffprobe-static all ship prebuilt linux-x64
 # binaries — no python3/make/g++ toolchain needed in the image.
 RUN npm ci --only=production
 
-COPY src/ ./src/
+COPY api/src/ ./src/
+COPY db/migrations/ ./db/migrations/
 
 EXPOSE 3000
 
 ENV NODE_ENV=production
+# Migrations are copied above; the runner checks this before its relative fallback.
+ENV MIGRATIONS_DIR=/app/db/migrations
 
 # Run as the non-root 'node' user (uid 1000, ships with the base image).
 # uid 1000 matches the typical Linux host deploy user, so the bind-mounted

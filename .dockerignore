@@ -1,0 +1,22 @@
+# Context for api/Dockerfile is the repo root — keep it lean.
+# Only api/package*.json, api/src/ and db/migrations/ are COPY'd.
+**/node_modules
+**/dist
+.git
+.github
+.idea
+.impeccable
+.claude
+frontend
+uploads
+graphify-out
+api/test
+*.md
+*.MD
+*.html
+*.css
+.env
+.env.*
+*firebase-adminsdk*.json
+.DS_Store
+npm-debug.log*

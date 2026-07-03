@@ -23,9 +23,13 @@ services:
       retries: 10
 
   api:
+    # image: is the name used when building locally AND the tag `docker compose
+    # up --no-build` runs on the server after `docker load` (see deploy.sh).
+    image: enderthoughts-api:latest
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      # Repo-root context: the image also needs db/migrations (outside api/)
+      context: .
+      dockerfile: api/Dockerfile
     container_name: enderthoughts-api
     restart: unless-stopped
     environment:
@@ -60,6 +64,7 @@ services:
       - ${FIREBASE_SERVICE_ACCOUNT_PATH:-/dev/null}:/app/firebase-service-account.json:ro
 
   frontend:
+    image: enderthoughts-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile

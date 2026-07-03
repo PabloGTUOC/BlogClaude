@@ -3,8 +3,9 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 
 async function runMigrations() {
-  // Path resolved relatively from api/src/services/
-  const migrationsDir = path.join(__dirname, '../../../db/migrations');
+  // In the Docker image MIGRATIONS_DIR is set (db/migrations lives at repo
+  // root, outside api/src). The relative fallback covers running from api/.
+  const migrationsDir = process.env.MIGRATIONS_DIR || path.join(__dirname, '../../../db/migrations');
   if (!fs.existsSync(migrationsDir)) {
     console.warn(`WARNING: Migrations directory not found at: ${migrationsDir}. Skipping database migration execution.`);
     return;
