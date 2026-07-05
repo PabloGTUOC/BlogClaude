@@ -242,6 +242,7 @@
       :photo="lightboxPhoto"
       :is-open="lightboxOpen"
       :show-nav="galleryPhotos.length > 1"
+      :photos="galleryPhotos"
       @close="lightboxOpen = false"
       @prev="navigateLightbox(-1)"
       @next="navigateLightbox(1)"
@@ -255,6 +256,7 @@ import { useRoute } from 'vue-router';
 import { useAnalogStore } from '@/stores/analog';
 import { useAdminStore } from '@/stores/admin';
 import { useUiStore } from '@/stores/ui';
+import { uploadInBatches } from '@/services/uploadBatches';
 import GalleryMeta from '@/components/GalleryMeta.vue';
 import UploadZone from '@/components/UploadZone.vue';
 import Lightbox from '@/components/Lightbox.vue';
@@ -429,11 +431,13 @@ export default {
     };
 
     // --- Upload ---
-    const handleUpload = async ({ files, onSuccess, onFailure }) => {
+    const handleUpload = async ({ files, onProgress, onSuccess, onFailure }) => {
       try {
-        const formData = new FormData();
-        files.forEach(f => formData.append('photos', f));
-        await analogStore.uploadPhotos(route.params.galleryId, formData);
+        await uploadInBatches(
+          files,
+          formData => analogStore.uploadPhotos(route.params.galleryId, formData),
+          onProgress
+        );
         onSuccess();
         showUpload.value = false;
         const n = files.length;

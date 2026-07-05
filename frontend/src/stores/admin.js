@@ -144,6 +144,15 @@ export const useAdminStore = defineStore('admin', {
         throw error;
       }
     },
+    async uploadFeedPhotos(formData) {
+      try {
+        const response = await api.post('/admin/feed/upload', formData);
+        return response.data;
+      } catch (error) {
+        console.error('Failed to upload photos to feed:', error);
+        throw error;
+      }
+    },
     async hardDeletePhoto(photoId) {
       try {
         await api.delete(`/admin/feed/${photoId}`);

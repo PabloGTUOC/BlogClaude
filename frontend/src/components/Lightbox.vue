@@ -24,6 +24,12 @@
             <span class="mx-2 text-dust/60">//</span> CAMERA: <b class="text-chrome font-medium">{{ photo.camera || 'N/A' }}</b>
             <span class="mx-2 text-dust/60">//</span> FILM: <b class="text-chrome font-medium">{{ photo.film_stock || 'N/A' }}</b>
           </template>
+          <span class="mx-2 text-dust/60">//</span>
+          <a
+            :href="downloadUrl"
+            :download="fileName"
+            class="text-chrome hover:text-phosphor transition-colors duration-150 select-none"
+          >[ ↓ FULL RES ]</a>
         </p>
 
         <!-- Tag badges row -->
@@ -66,6 +72,12 @@ export default {
     showNav: {
       type: Boolean,
       default: false
+    },
+    // Full photo list the lightbox is navigating; used only to preload the
+    // neighbours' display images so PREV/NEXT feels instant.
+    photos: {
+      type: Array,
+      default: () => []
     }
   },
   emits: ['close', 'prev', 'next'],
@@ -74,16 +86,41 @@ export default {
 
     const isVideo = computed(() => props.photo?.media_type === 'video');
 
-    const imageUrl = computed(() => {
-      if (!props.photo) return '';
-      if (props.photo.filename.startsWith('http')) return props.photo.filename;
-      return `${apiBase}/uploads/${props.photo.filename}`;
-    });
+    const mediaUrl = (rel) => (rel.startsWith('http') ? rel : `${apiBase}/uploads/${rel}`);
+
+    // Videos have no smaller variant; images display the 900px thumbnail —
+    // plenty for an ~85vh viewport and far faster to fetch than the 5000px
+    // original, which stays behind the explicit FULL RES download link.
+    const displayUrl = (photo) => {
+      if (!photo) return '';
+      if (photo.media_type === 'video' || !photo.thumbnail) return mediaUrl(photo.filename);
+      return mediaUrl(photo.thumbnail);
+    };
+
+    const imageUrl = computed(() => displayUrl(props.photo));
+
+    const downloadUrl = computed(() => (props.photo ? mediaUrl(props.photo.filename) : ''));
 
     const fileName = computed(() => {
       if (!props.photo) return 'N/A';
-      return props.photo.filename.split('/').pop();
+      return props.photo.original_filename || props.photo.filename.split('/').pop();
     });
+
+    // Warm the browser cache for the adjacent photos' display images so
+    // PREV/NEXT doesn't wait on the network.
+    const preloadNeighbors = () => {
+      if (!props.isOpen || !props.photo || props.photos.length < 2) return;
+      const idx = props.photos.findIndex(p => p.id === props.photo.id);
+      if (idx === -1) return;
+      const len = props.photos.length;
+      for (const neighbor of [props.photos[(idx + 1) % len], props.photos[(idx - 1 + len) % len]]) {
+        if (neighbor && neighbor.media_type !== 'video') {
+          new Image().src = displayUrl(neighbor);
+        }
+      }
+    };
+
+    watch(() => [props.photo, props.isOpen], preloadNeighbors);
 
     const tags = computed(() => {
       if (!props.photo) return [];
@@ -127,6 +164,7 @@ export default {
     return {
       isVideo,
       imageUrl,
+      downloadUrl,
       fileName,
       tags,
       close

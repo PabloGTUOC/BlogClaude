@@ -426,11 +426,12 @@ router.post('/galleries/:id/photos', async (req, res) => {
             : await processUpload(file.path, file.originalname);
 
           const [insertResult] = await db.pool.query(
-            `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, thumbnail_small, width, height, duration, media_type, exif_json, uploaded_by, source)
-             VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'direct')`,
+            `INSERT INTO photos (zone, digital_gallery_id, filename, original_filename, thumbnail, thumbnail_small, width, height, duration, media_type, exif_json, uploaded_by, source)
+             VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'direct')`,
             [
               galleryId,
               processed.filename,
+              file.originalname || null,
               processed.thumbnail,
               processed.thumbnail_small,
               processed.width,
@@ -453,6 +454,7 @@ router.post('/galleries/:id/photos', async (req, res) => {
           results.push({
             id: photoId,
             ...processed,
+            original_filename: file.originalname || null,
             exif: processed.exif_json ? JSON.parse(processed.exif_json) : null
           });
         }
@@ -490,11 +492,12 @@ router.post('/galleries/:id/photos', async (req, res) => {
           : await importGooglePhoto(item.baseUrl, item.filename, item.creationTime, accessToken);
 
         const [insertResult] = await db.pool.query(
-          `INSERT INTO photos (zone, digital_gallery_id, filename, thumbnail, thumbnail_small, width, height, duration, media_type, exif_json, uploaded_by, source, google_photos_id)
-           VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google_photos', ?)`,
+          `INSERT INTO photos (zone, digital_gallery_id, filename, original_filename, thumbnail, thumbnail_small, width, height, duration, media_type, exif_json, uploaded_by, source, google_photos_id)
+           VALUES ('digital', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google_photos', ?)`,
           [
             galleryId,
             processed.filename,
+            item.filename || null,
             processed.thumbnail,
             processed.thumbnail_small,
             processed.width,
@@ -518,6 +521,7 @@ router.post('/galleries/:id/photos', async (req, res) => {
         results.push({
           id: photoId,
           ...processed,
+          original_filename: item.filename || null,
           exif: processed.exif_json ? JSON.parse(processed.exif_json) : null
         });
       }

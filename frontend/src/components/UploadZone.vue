@@ -32,7 +32,7 @@
     <!-- Progress Meter -->
     <div v-if="isTransmitting" class="flex flex-col items-center select-none font-body text-sm space-y-1">
       <div class="text-phosphor tracking-wider">{{ progressBar }}</div>
-      <div class="text-xs text-dust">TRANSMITTING DATA TO BEAM TERMINAL...</div>
+      <div class="text-xs text-dust">{{ progressLabel }}</div>
     </div>
 
     <!-- Actions Row -->
@@ -65,6 +65,7 @@ export default {
     const isDragOver = ref(false);
     const isTransmitting = ref(false);
     const progress = ref(0);
+    const progressLabel = ref('TRANSMITTING DATA TO BEAM TERMINAL...');
 
     const stagedFilesNames = computed(() => {
       return files.value.map(f => f.name).slice(0, 3).join(', ') + (files.value.length > 3 ? '...' : '');
@@ -109,6 +110,7 @@ export default {
     const clear = () => {
       files.value = [];
       progress.value = 0;
+      progressLabel.value = 'TRANSMITTING DATA TO BEAM TERMINAL...';
       isTransmitting.value = false;
       if (fileInput.value) fileInput.value.value = '';
     };
@@ -131,6 +133,12 @@ export default {
       try {
         emit('files-uploaded', {
           files: files.value,
+          // Real batch progress (multi-request uploads) overrides the fake
+          // meter upward and names the batch being transmitted.
+          onProgress: (done, total) => {
+            progress.value = Math.max(progress.value, Math.min(99, Math.round((done / total) * 100)));
+            progressLabel.value = `TRANSMITTED ${done}/${total} FILES...`;
+          },
           onSuccess: () => {
             clearInterval(interval);
             progress.value = 100;
@@ -142,6 +150,7 @@ export default {
             clearInterval(interval);
             isTransmitting.value = false;
             progress.value = 0;
+            progressLabel.value = 'TRANSMITTING DATA TO BEAM TERMINAL...';
           }
         });
       } catch (err) {
@@ -157,6 +166,7 @@ export default {
       isDragOver,
       isTransmitting,
       progress,
+      progressLabel,
       stagedFilesNames,
       progressBar,
       triggerFileSelect,

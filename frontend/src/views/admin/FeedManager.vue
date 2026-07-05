@@ -6,7 +6,7 @@
           FEED CURATION COCKPIT
         </h2>
         <p class="text-xs font-body text-fog mt-1">
-          Published frames only. Push photos to feed from the gallery admin view.
+          Published frames only. Push photos from the gallery admin view, or transmit directly below.
         </p>
       </div>
 
@@ -14,12 +14,32 @@
         <router-link to="/admin/analog" class="btn btn--ghost btn--sm text-xs">
           [ ◀ GO TO GALLERIES ]
         </router-link>
+        <button class="btn btn--ghost btn--sm text-xs" @click="showUpload = !showUpload">
+          [ {{ showUpload ? 'CLOSE UPLOADER' : '+ DIRECT UPLOAD' }} ]
+        </button>
         <button class="btn btn--sm text-xs" :disabled="saving" @click="saveChanges">
           <span v-if="saving">SAVING<span class="cursor">_</span></span>
           <span v-else>[ COMMIT CHANGES ]</span>
         </button>
       </div>
     </header>
+
+    <!-- Direct upload drawer: frames land on the public feed immediately,
+         stamped with the chosen post date (backdating supported). -->
+    <div v-if="showUpload" class="p-6 border border-gridColor bg-surface/50 space-y-4">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <h4 class="text-xs font-label text-fog uppercase select-none">// TRANSMIT DIRECTLY TO PUBLIC FEED</h4>
+        <label class="text-xs font-label text-fog uppercase select-none flex items-center gap-2">
+          POST DATE
+          <input
+            v-model="uploadDate"
+            type="date"
+            class="bg-void border border-gridColor/60 p-1.5 text-chrome font-body focus:border-phosphor focus:outline-none"
+          />
+        </label>
+      </div>
+      <UploadZone label="DROP FEED FRAMES HERE" @files-uploaded="handleFeedUpload" />
+    </div>
 
     <!-- Bulk Action Toolbar -->
     <div v-if="selectedIds.length > 0" class="flex items-center gap-3 p-3 border border-neon-red/50 bg-neon-red/5 select-none text-xs font-label">
@@ -48,6 +68,7 @@
             <th class="p-3 w-28">Origin</th>
             <th class="p-3">Caption &amp; Tags</th>
             <th class="p-3 w-20">Sort #</th>
+            <th class="p-3 w-36">Post Date</th>
             <th class="p-3 w-28 text-center">Status</th>
           </tr>
         </thead>
@@ -107,6 +128,14 @@
                 class="w-16 bg-void border border-gridColor/60 p-1.5 focus:border-phosphor focus:outline-none text-chrome text-center"
               />
             </td>
+            <td class="p-3">
+              <input
+                v-model="photo.published_date"
+                type="date"
+                :aria-label="`Post date for frame ${photo.id}`"
+                class="w-32 bg-void border border-gridColor/60 p-1.5 focus:border-phosphor focus:outline-none text-chrome"
+              />
+            </td>
             <td class="p-3 text-center select-none font-label">
               <button
                 :class="['btn btn--sm py-1 w-24 text-xs', photo.is_public ? 'border-phosphor text-phosphor' : 'border-dust text-dust']"
@@ -124,9 +153,14 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAdminStore } from '@/stores/admin';
 import { useUiStore } from '@/stores/ui';
+import { uploadInBatches } from '@/services/uploadBatches';
+import UploadZone from '@/components/UploadZone.vue';
 
 export default {
   name: 'FeedManager',
+  components: {
+    UploadZone
+  },
   setup() {
     const adminStore = useAdminStore();
     const ui = useUiStore();
@@ -135,6 +169,8 @@ export default {
     const editablePhotos = ref([]);
     const dragSourceIdx = ref(null);
     const dragOverIdx = ref(null);
+    const showUpload = ref(false);
+    const uploadDate = ref(new Date().toISOString().slice(0, 10));
 
     const feedPhotos = computed(() => adminStore.feedPhotos);
     const loading = computed(() => adminStore.loading);
@@ -150,12 +186,16 @@ export default {
       await Promise.all([loadFeed(), adminStore.fetchTags()]);
     });
 
+    // published_at arrives as an ISO datetime; date inputs need YYYY-MM-DD.
+    const toDateInput = (val) => (val ? String(val).slice(0, 10) : '');
+
     const loadFeed = async () => {
       // Always load only published feed photos
       await adminStore.fetchFeedPhotos(1, 200, true);
       editablePhotos.value = JSON.parse(JSON.stringify(feedPhotos.value)).map(p => ({
         ...p,
-        tags: parseTags(p.tags)
+        tags: parseTags(p.tags),
+        published_date: toDateInput(p.published_at)
       }));
     };
 
@@ -224,18 +264,21 @@ export default {
           const itemTags = parseTags(item.tags);
           const origTags = parseTags(orig?.tags);
           const tagsChanged = JSON.stringify(itemTags.map(t => t.id).sort()) !== JSON.stringify(origTags.map(t => t.id).sort());
+          const dateChanged = item.published_date && item.published_date !== toDateInput(orig?.published_at);
 
           if (
             orig?.caption !== item.caption ||
             orig?.sort_order !== item.sort_order ||
             orig?.is_public !== item.is_public ||
-            tagsChanged
+            tagsChanged ||
+            dateChanged
           ) {
             updates.push(adminStore.updatePhotoCuration(item.id, {
               caption: item.caption,
               sort_order: item.sort_order,
               is_public: item.is_public,
-              tagIds: itemTags.map(t => t.id)
+              tagIds: itemTags.map(t => t.id),
+              ...(dateChanged ? { published_at: item.published_date } : {})
             }));
           }
         }
@@ -246,6 +289,27 @@ export default {
         ui.error('Couldn\'t save feed changes. Please try again.');
       } finally {
         saving.value = false;
+      }
+    };
+
+    const handleFeedUpload = async ({ files, onProgress, onSuccess, onFailure }) => {
+      try {
+        await uploadInBatches(
+          files,
+          (formData) => {
+            if (uploadDate.value) formData.append('published_at', uploadDate.value);
+            return adminStore.uploadFeedPhotos(formData);
+          },
+          onProgress
+        );
+        onSuccess();
+        showUpload.value = false;
+        await loadFeed();
+        const n = files.length;
+        ui.success(`// ${n} ${n === 1 ? 'FRAME' : 'FRAMES'} POSTED TO FEED //`);
+      } catch (err) {
+        onFailure();
+        ui.error('Upload failed. Please check your connection and try again.');
       }
     };
 
@@ -264,6 +328,7 @@ export default {
 
     return {
       saving, selectedIds, editablePhotos, loading, isAllSelected, allTags, dragOverIdx,
+      showUpload, uploadDate, handleFeedUpload,
       getThumbUrl, getPhotoTags, availableTagsForPhoto, addPhotoTag, removePhotoTag,
       toggleSelectAll, saveChanges, bulkUnpublish,
       onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd

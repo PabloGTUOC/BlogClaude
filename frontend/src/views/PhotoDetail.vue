@@ -31,6 +31,12 @@
               <span class="mx-2 text-dust/60">//</span> CAMERA: <b class="text-chrome font-medium">{{ photo.camera || 'N/A' }}</b>
               <span class="mx-2 text-dust/60">//</span> FILM: <b class="text-chrome font-medium">{{ photo.film_stock || 'N/A' }}</b>
             </template>
+            <span class="mx-2 text-dust/60">//</span>
+            <a
+              :href="downloadUrl"
+              :download="fileName"
+              class="text-chrome hover:text-phosphor transition-colors duration-150 select-none"
+            >[ ↓ FULL RES ]</a>
           </p>
 
           <p v-if="photo.caption" class="font-body text-sm text-chrome mt-3 border-t border-gridColor/40 pt-3">
@@ -71,15 +77,21 @@ export default {
     const photo = computed(() => photosStore.currentPhoto);
     const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace('/api', '');
 
+    const mediaUrl = (rel) => (rel.startsWith('http') ? rel : `${apiBase}/uploads/${rel}`);
+
+    // Show the 900px thumbnail (the container caps at 70vh anyway); the
+    // 5000px original stays behind the explicit FULL RES download link.
     const imageUrl = computed(() => {
       if (!photo.value) return '';
-      if (photo.value.filename.startsWith('http')) return photo.value.filename;
-      return `${apiBase}/uploads/${photo.value.filename}`;
+      if (photo.value.media_type === 'video' || !photo.value.thumbnail) return mediaUrl(photo.value.filename);
+      return mediaUrl(photo.value.thumbnail);
     });
+
+    const downloadUrl = computed(() => (photo.value ? mediaUrl(photo.value.filename) : ''));
 
     const fileName = computed(() => {
       if (!photo.value) return 'N/A';
-      return photo.value.filename.split('/').pop();
+      return photo.value.original_filename || photo.value.filename.split('/').pop();
     });
 
     const tags = computed(() => {
@@ -102,6 +114,7 @@ export default {
       loading,
       error,
       imageUrl,
+      downloadUrl,
       fileName,
       tags
     };

@@ -104,17 +104,83 @@
   text-shadow: none;
 }
 
+/* Desktop rendering: inline tab strip, right-aligned. Hidden on mobile,
+   where the drop-down below takes over. */
 .nav__tabs {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-1);
-  overflow-x: auto;
-  scrollbar-width: none;
-  /* Take the middle of the bar and keep tabs right-aligned; the auth badge
-     sits outside this scroll strip so it stays visible on mobile. */
   flex: 1 1 auto;
   min-width: 0;
-  justify-content: flex-end;
+}
+
+/* Mobile rendering: the current section is a button; tapping it drops a
+   full-width panel with every destination. Hidden on desktop. */
+.nav__menu {
+  display: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+}
+
+.nav__menu-btn {
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--phosphor);
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.nav__menu-backdrop {
+  position: fixed;
+  top: var(--nav-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-nav);
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.nav__menu-panel {
+  position: fixed;
+  top: var(--nav-h);
+  left: 0;
+  right: 0;
+  z-index: calc(var(--z-nav) + 1);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-bottom: 1px solid var(--grid);
+  text-align: left;
+}
+
+.nav__menu-item {
+  display: block;
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--grid);
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--dust);
+  text-decoration: none;
+}
+
+.nav__menu-item--active {
+  color: var(--phosphor);
+}
+
+@media (max-width: 640px) {
+  .nav__tabs {
+    display: none;
+  }
+  .nav__menu {
+    display: block;
+  }
 }
 
 .nav__tabs::-webkit-scrollbar {
@@ -128,6 +194,28 @@
   letter-spacing: 0.1em;
   color: var(--fog);
   text-decoration: none;
+}
+
+/* The signed-in profile name (full Google name — can be very long). Capped
+   so it can never starve the tab strip out of the bar. */
+.nav__auth-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22ch;
+}
+
+@media (max-width: 640px) {
+  .nav {
+    padding: 0 var(--space-3);
+    gap: var(--space-2);
+  }
+  .nav__logo {
+    font-size: 18px;
+  }
+  .nav__auth-name {
+    max-width: 8ch;
+  }
 }
 
 .tab {

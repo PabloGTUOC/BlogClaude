@@ -19,7 +19,7 @@
           A transmission from a slightly alternate 1983 — where the network was wired a decade early and photography went digital while still feeling chemical. A place to share with family & friends our daily life trough images. <span class="cursor">_</span>
         </p>
       </div>
-    </header>
+    </header>there
 
     <!-- Feed -->
     <section class="max-w-[680px] mx-auto px-4 py-10">
@@ -113,6 +113,7 @@
       :photo="selectedPhoto"
       :is-open="lightboxOpen"
       :show-nav="photos.length > 1"
+      :photos="photos"
       @close="closePhotoLightbox"
       @prev="navigateLightbox(-1)"
       @next="navigateLightbox(1)"

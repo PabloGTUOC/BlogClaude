@@ -372,54 +372,66 @@ router.put('/galleries/:id/publish', verifyJWT, requireAdmin, async (req, res) =
 });
 
 // POST /api/analog/galleries/:id/photos - Upload photos to gallery (admin only, multipart)
-router.post('/galleries/:id/photos', verifyJWT, requireAdmin, upload.array('photos', 12), async (req, res) => {
-  const galleryId = parseInt(req.params.id, 10);
-
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'No photo files uploaded', code: 'MISSING_FILES' });
-  }
-
-  const results = [];
-  try {
-    // Validate the target before processing anything, so a bad gallery id is a
-    // clean 404 instead of an FK-violation 500 after files hit the disk.
-    const galleryRows = await db.query('SELECT id FROM analog_galleries WHERE id = ?', [galleryId]);
-    if (galleryRows.length === 0) {
-      return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+// upload.array is invoked manually (same pattern as digital.js) so multer
+// errors — e.g. more than 12 files in one request — become a clean 400 JSON
+// instead of falling through to the generic 500 handler mid-stream.
+router.post('/galleries/:id/photos', verifyJWT, requireAdmin, (req, res) => {
+  upload.array('photos', 12)(req, res, async (err) => {
+    if (err) {
+      upload.cleanupFiles(req.files); // files staged before the failure
+      return res.status(400).json({ error: err.message, code: 'MULTER_ERROR' });
     }
 
-    for (const file of req.files) {
-      const processed = await processUpload(file.path, file.originalname);
+    const galleryId = parseInt(req.params.id, 10);
 
-      const [insertResult] = await db.pool.query(
-        `INSERT INTO photos (zone, analog_gallery_id, filename, thumbnail, thumbnail_small, width, height, exif_json, uploaded_by)
-         VALUES ('analog', ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          galleryId,
-          processed.filename,
-          processed.thumbnail,
-          processed.thumbnail_small,
-          processed.width,
-          processed.height,
-          processed.exif_json,
-          req.user.id
-        ]
-      );
-
-      results.push({
-        id: insertResult.insertId,
-        ...processed,
-        exif: processed.exif_json ? JSON.parse(processed.exif_json) : null
-      });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No photo files uploaded', code: 'MISSING_FILES' });
     }
 
-    res.status(201).json(results);
-  } catch (error) {
-    console.error('Error uploading analog photos:', error);
-    res.status(500).json({ error: 'Failed to process and upload photos: ' + error.message, code: 'UPLOAD_FAILED' });
-  } finally {
-    upload.cleanupFiles(req.files);
-  }
+    const results = [];
+    try {
+      // Validate the target before processing anything, so a bad gallery id is a
+      // clean 404 instead of an FK-violation 500 after files hit the disk.
+      const galleryRows = await db.query('SELECT id FROM analog_galleries WHERE id = ?', [galleryId]);
+      if (galleryRows.length === 0) {
+        return res.status(404).json({ error: 'Gallery not found', code: 'NOT_FOUND' });
+      }
+
+      for (const file of req.files) {
+        const processed = await processUpload(file.path, file.originalname);
+
+        const [insertResult] = await db.pool.query(
+          `INSERT INTO photos (zone, analog_gallery_id, filename, original_filename, thumbnail, thumbnail_small, width, height, exif_json, uploaded_by)
+           VALUES ('analog', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            galleryId,
+            processed.filename,
+            file.originalname || null,
+            processed.thumbnail,
+            processed.thumbnail_small,
+            processed.width,
+            processed.height,
+            processed.exif_json,
+            req.user.id
+          ]
+        );
+
+        results.push({
+          id: insertResult.insertId,
+          ...processed,
+          original_filename: file.originalname || null,
+          exif: processed.exif_json ? JSON.parse(processed.exif_json) : null
+        });
+      }
+
+      res.status(201).json(results);
+    } catch (error) {
+      console.error('Error uploading analog photos:', error);
+      res.status(500).json({ error: 'Failed to process and upload photos: ' + error.message, code: 'UPLOAD_FAILED' });
+    } finally {
+      upload.cleanupFiles(req.files);
+    }
+  });
 });
 
 // PUT /api/analog/galleries/:id/photos/reorder - Reorder photos within gallery

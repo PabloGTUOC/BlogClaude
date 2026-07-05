@@ -5,8 +5,15 @@
       [{{ photo.zone === 'analog' ? '35mm' : 'DIGITAL' }}]
     </span>
 
-    <!-- Thumbnail Image (poster frame for videos) -->
-    <img class="pcard__img w-full h-full object-cover absolute inset-0" :src="thumbUrl" :srcset="thumbSrcset" sizes="(max-width: 640px) 50vw, 300px" :alt="photo.caption || 'Photo'" loading="lazy" />
+    <!-- Thumbnail Image (poster frame for videos).
+         The <source> pins phones to the 320px variant: with plain srcset a
+         3x-density phone computes 50vw × 3 ≈ 585px and downloads the 215KB
+         900px thumb for every cell — ~8MB per gallery through the home
+         uplink. Grid cells are small; the 25KB small variant is enough. -->
+    <picture>
+      <source v-if="smallUrl" media="(max-width: 640px)" :srcset="smallUrl" />
+      <img class="pcard__img w-full h-full object-cover absolute inset-0" :src="thumbUrl" :srcset="thumbSrcset" sizes="(max-width: 640px) 50vw, 300px" :alt="photo.caption || 'Photo'" loading="lazy" />
+    </picture>
 
     <!-- Video play overlay -->
     <div v-if="photo.media_type === 'video'" class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -103,6 +110,12 @@ export default {
       return `${apiBase}/uploads/${props.photo.thumbnail_small} 320w, ${apiBase}/uploads/${props.photo.thumbnail} 900w`;
     });
 
+    // Phone-only source (see template): pins small screens to the 320px file.
+    const smallUrl = computed(() => {
+      if (!props.photo.thumbnail_small || props.photo.thumbnail.startsWith('http')) return '';
+      return `${apiBase}/uploads/${props.photo.thumbnail_small}`;
+    });
+
     const imageUrl = computed(() => {
       if (!props.photo.filename) return '';
       if (props.photo.filename.startsWith('http')) return props.photo.filename;
@@ -120,6 +133,7 @@ export default {
     return {
       thumbUrl,
       thumbSrcset,
+      smallUrl,
       imageUrl,
       formattedDuration,
       liked,

@@ -22,6 +22,7 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAnalogStore } from '@/stores/analog';
+import { uploadInBatches } from '@/services/uploadBatches';
 import UploadZone from '@/components/UploadZone.vue';
 
 export default {
@@ -36,11 +37,13 @@ export default {
 
     const galleryId = computed(() => route.params.id);
 
-    const handleFilesUploaded = async ({ files, onSuccess, onFailure }) => {
+    const handleFilesUploaded = async ({ files, onProgress, onSuccess, onFailure }) => {
       try {
-        const formData = new FormData();
-        files.forEach(f => formData.append('photos', f));
-        await analogStore.uploadPhotos(galleryId.value, formData);
+        await uploadInBatches(
+          files,
+          formData => analogStore.uploadPhotos(galleryId.value, formData),
+          onProgress
+        );
         onSuccess();
         setTimeout(() => {
           router.push(`/analog/${galleryId.value}`);

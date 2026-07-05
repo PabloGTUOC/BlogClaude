@@ -62,6 +62,7 @@
       :photo="selectedPhoto" 
       :is-open="lightboxOpen"
       :show-nav="photos.length > 1"
+      :photos="photos"
       @close="closePhotoLightbox"
       @prev="navigateLightbox(-1)"
       @next="navigateLightbox(1)"

@@ -190,6 +190,7 @@
       :photo="selectedPhoto" 
       :is-open="lightboxOpen"
       :show-nav="photos.length > 1"
+      :photos="photos"
       @close="closePhotoLightbox"
       @prev="navigateLightbox(-1)"
       @next="navigateLightbox(1)"
@@ -203,6 +204,7 @@ import { useRoute } from 'vue-router';
 import { useDigitalStore } from '@/stores/digital';
 import { useAuthStore } from '@/stores/auth';
 import { useUiStore } from '@/stores/ui';
+import { uploadInBatches } from '@/services/uploadBatches';
 import PhotoCard from '@/components/PhotoCard.vue';
 import UploadZone from '@/components/UploadZone.vue';
 import Lightbox from '@/components/Lightbox.vue';
@@ -304,11 +306,13 @@ export default {
       }
     };
 
-    const handleFilesUploaded = async ({ files, onSuccess, onFailure }) => {
+    const handleFilesUploaded = async ({ files, onProgress, onSuccess, onFailure }) => {
       try {
-        const formData = new FormData();
-        files.forEach(f => formData.append('photos', f));
-        await digitalStore.uploadPhotos(gallery.value.id, formData);
+        await uploadInBatches(
+          files,
+          formData => digitalStore.uploadPhotos(gallery.value.id, formData),
+          onProgress
+        );
         onSuccess();
         showUploadZone.value = false;
         const n = files.length;

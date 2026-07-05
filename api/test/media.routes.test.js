@@ -43,7 +43,11 @@ const PHOTOS = {
   publicFeed: { is_public: 1, zone: 'analog', analog_gallery_id: 10, analog_published: 1 },
   digital: { is_public: 0, zone: 'digital', analog_gallery_id: null, analog_published: null },
   analogPublished: { is_public: 0, zone: 'analog', analog_gallery_id: 10, analog_published: 1 },
-  analogUnpublished: { is_public: 0, zone: 'analog', analog_gallery_id: 11, analog_published: 0 }
+  analogUnpublished: { is_public: 0, zone: 'analog', analog_gallery_id: 11, analog_published: 0 },
+  // Direct feed upload (zone 'feed', no gallery). Public while published;
+  // once unpublished it must grant nothing to anyone but admin.
+  feedPublic: { is_public: 1, zone: 'feed', analog_gallery_id: null, analog_published: null },
+  feedUnpublished: { is_public: 0, zone: 'feed', analog_gallery_id: null, analog_published: null }
 };
 
 function setup({ photo, user, galleryTags = [] }) {
@@ -88,7 +92,14 @@ describe('media access matrix', () => {
 
     ['analog unpublished, family', 'analogUnpublished', 'family', [], 403],
     ['analog unpublished, friend', 'analogUnpublished', 'friendBerlin', [{ 1: 1 }], 403],
-    ['analog unpublished, admin', 'analogUnpublished', 'admin', [], 200]
+    ['analog unpublished, admin', 'analogUnpublished', 'admin', [], 200],
+
+    ['feed public, anonymous', 'feedPublic', null, [], 200],
+    ['feed public, friend', 'feedPublic', 'friendBerlin', [], 200],
+    ['feed unpublished, anonymous', 'feedUnpublished', null, [], 403],
+    ['feed unpublished, family', 'feedUnpublished', 'family', [], 403],
+    ['feed unpublished, friend', 'feedUnpublished', 'friendBerlin', [], 403],
+    ['feed unpublished, admin', 'feedUnpublished', 'admin', [], 200]
   ];
 
   for (const [desc, photoKey, userKey, galleryTags, expected] of matrix) {
